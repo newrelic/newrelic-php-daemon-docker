@@ -11,12 +11,12 @@ ENV NEWRELIC_NAME newrelic-php5-${NEWRELIC_VERSION}-linux-musl
 ENV NEWRELIC_SHA d0b3cccf3a26ba0c266ae95aaea48a98283b1500b183cecd9218315f98e59c7d
 
 RUN set -ex; \
-        wget -O /tmp/${NEWRELIC_NAME}.tar.gz http://download.newrelic.com/php_agent/archive/${NEWRELIC_VERSION}/${NEWRELIC_NAME}.tar.gz; \
+        wget -O /tmp/${NEWRELIC_NAME}.tar.gz https://download.newrelic.com/php_agent/archive/${NEWRELIC_VERSION}/${NEWRELIC_NAME}.tar.gz; \
         cd /tmp/; \
         echo "$NEWRELIC_SHA  $NEWRELIC_NAME.tar.gz" | sha256sum -c; \
         tar -xzf ${NEWRELIC_NAME}.tar.gz; \
         export NR_INSTALL_SILENT=1; \
-        ${NEWRELIC_NAME}/newrelic-install install_daemon; \
+        ${NEWRELIC_NAME}/newrelic-install install_daemon
 
 FROM alpine:3.10
 
