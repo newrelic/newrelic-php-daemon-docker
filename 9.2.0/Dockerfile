@@ -24,10 +24,7 @@ FROM alpine:3.10
 RUN apk add --no-cache \
                     ca-certificates
 
+COPY docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
 COPY --from=build /usr/bin/newrelic-daemon /usr/bin/newrelic-daemon
 
-RUN set -ex; \
-      mkdir /var/log/newrelic; \
-      touch /var/log/newrelic/newrelic-daemon.log
-
-CMD /usr/bin/newrelic-daemon --address=$(hostname):${NEWRELIC_DAEMON_PORT:-31339} --watchdog-foreground
+CMD ["sh","/usr/bin/docker-entrypoint.sh"]
