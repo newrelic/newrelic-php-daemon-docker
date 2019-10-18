@@ -1,4 +1,8 @@
 #!/bin/sh
+#------------------------------------------------------------------------------
+# Copyright [2019] New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#----------------------------------------------------------------------------*/
 set -e
 
 NEWRELIC_CONFIG_PATH="$(echo -e "${NEWRELIC_CONFIG_PATH}" | tr -d '[:space:]')"
