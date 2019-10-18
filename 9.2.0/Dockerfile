@@ -27,6 +27,8 @@ RUN apk add --no-cache \
 COPY docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
 COPY --from=build /usr/bin/newrelic-daemon /usr/bin/newrelic-daemon
 
-EXPOSE "${NEWRELIC_DAEMON_PORT:-31339}"
+EXPOSE 31339
 
 ENTRYPOINT ["sh","/usr/bin/docker-entrypoint.sh"]
+
+CMD ["--logfile","/proc/self/fd/1"]
