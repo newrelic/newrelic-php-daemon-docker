@@ -24,11 +24,14 @@ FROM alpine:3.10
 RUN apk add --no-cache \
                     ca-certificates
 
+RUN set -ex; \
+          mkdir /var/log/newrelic; \
+          touch /var/log/newrelic/newrelic-daemon.log
+
+
 COPY docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
 COPY --from=build /usr/bin/newrelic-daemon /usr/bin/newrelic-daemon
 
 EXPOSE 31339
 
 ENTRYPOINT ["sh","/usr/bin/docker-entrypoint.sh"]
-
-CMD ["--logfile","/proc/self/fd/1"]

@@ -43,15 +43,14 @@ docker run --name some-daemon -v newrelic.cfg:/etc/newrelic/newrelic.cfg newreli
 To find out more about the daemon config visit our [docs site](https://docs.newrelic.com/docs/agents/php-agent/configuration/proxy-daemon-newreliccfg-settings).
 
 ## Passing in flags
-Additional configuration can be passed in as flags. Passing in configuration
-values as flags will override the log file configuration. If you' like to
-change the log level without changing the log file, use the following command:
+Additional configuration can be passed in as flags. If you' like to
+change the log level, use the following command:
 ```
-docker run php-daemon --loglevel debug --logfile /proc/self/fd/1
+docker run php-daemon --loglevel debug
 ```
 To find out more about what flags are possible, execute the following command:
 ```
-docker run php-daemon --help --logfile /proc/self/fd/1
+docker run php-daemon --help
 ```
 
 More information about how to setup an agent container can be found on the [docs site](https://docs.newrelic.com/docs/agents/php-agent/advanced-installation/install-php-agent-docker).

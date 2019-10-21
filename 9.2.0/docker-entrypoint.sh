@@ -14,4 +14,4 @@ fi
 
 set -- "$@"  --address=$(hostname):31339
 
-exec /usr/bin/newrelic-daemon --watchdog-foreground "$@"
+exec /usr/bin/newrelic-daemon --logfile /proc/self/fd/1 --watchdog-foreground "$@"
