@@ -21,9 +21,10 @@ docker logs some-daemon
 
 You may want to run the daemon using a custom config. The `-c` daemon flag must
 be set to the location of the config file. The `-v` flag will copy a local
-config file into the container.
+config file into the container. An absolute path is required when using the `-v`
+flag.
 ```
-docker run --name some-daemon -v newrelic.cfg:/etc/newrelic/newrelic.cfg newrelic-daemon -c /etc/newrelic/newrelic.cfg
+docker run --name some-daemon -v $PWD/newrelic.cfg:/etc/newrelic/newrelic.cfg newrelic-daemon -c /etc/newrelic/newrelic.cfg
 ```
 
 To find out more about the daemon config visit our [docs site](https://docs.newrelic.com/docs/agents/php-agent/configuration/proxy-daemon-newreliccfg-settings).
