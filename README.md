@@ -32,11 +32,11 @@ To find out more about the daemon config visit our [docs site](https://docs.newr
 Additional configuration can be passed in as flags. If you' like to
 change the log level, use the following command:
 ```
-docker run php-daemon --loglevel debug
+docker run newrelic-daemon --loglevel debug
 ```
 To find out more about what flags are possible, execute the following command:
 ```
-docker run php-daemon --help
+docker run newrelic-daemon --help
 ```
 
 More information about how to setup an agent container can be found on the [docs site](https://docs.newrelic.com/docs/agents/php-agent/advanced-installation/install-php-agent-docker).
