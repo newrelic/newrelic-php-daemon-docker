@@ -8,8 +8,36 @@ To run this image, use the commands docker build and docker run:
 docker build -t newrelic-daemon .
 docker run --name some-daemon newrelic-daemon
 ```
-Setting the `NEWRELIC_DAEMON_PORT` environment variable will change the daemon port. This image defaults to port 31339.
+
+## Accessing logs
+
+The daemon logs are available by accessing the docker logs:
+
 ```
-docker run --name some-daemon -e NEWRELIC_DAEMON_PORT=1234 newrelic-daemon
+docker logs some-daemon
 ```
+
+## Using a custom config file
+
+You may want to run the daemon using a custom config. The `-c` daemon flag must
+be set to the location of the config file. The `-v` flag will copy a local
+config file into the container. An absolute path is required when using the `-v`
+flag.
+```
+docker run --name some-daemon -v $PWD/newrelic.cfg:/etc/newrelic/newrelic.cfg newrelic-daemon -c /etc/newrelic/newrelic.cfg
+```
+
+To find out more about the daemon config visit our [docs site](https://docs.newrelic.com/docs/agents/php-agent/configuration/proxy-daemon-newreliccfg-settings).
+
+## Passing in flags
+Additional configuration can be passed in as flags. If you' like to
+change the log level, use the following command:
+```
+docker run newrelic-daemon --loglevel debug
+```
+To find out more about what flags are possible, execute the following command:
+```
+docker run newrelic-daemon --help
+```
+
 More information about how to setup an agent container can be found on the [docs site](https://docs.newrelic.com/docs/agents/php-agent/advanced-installation/install-php-agent-docker).

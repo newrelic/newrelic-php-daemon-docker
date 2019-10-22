@@ -1,7 +1,7 @@
 #------------------------------------------------------------------------------
 # Copyright [2019] New Relic Corporation. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
-#----------------------------------------------------------------------------*/
+#------------------------------------------------------------------------------
 
 
 FROM alpine:3.10 AS build
@@ -24,10 +24,14 @@ FROM alpine:3.10
 RUN apk add --no-cache \
                     ca-certificates
 
+RUN set -ex; \
+          mkdir /var/log/newrelic
+
+COPY docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
 COPY --from=build /usr/bin/newrelic-daemon /usr/bin/newrelic-daemon
 
-RUN set -ex; \
-      mkdir /var/log/newrelic; \
-      touch /var/log/newrelic/newrelic-daemon.log
+EXPOSE 31339
 
-CMD /usr/bin/newrelic-daemon --address=$(hostname):${NEWRELIC_DAEMON_PORT:-31339} --watchdog-foreground
+ENTRYPOINT ["sh","/usr/bin/docker-entrypoint.sh"]
+
+CMD ["/usr/bin/newrelic-daemon"]
