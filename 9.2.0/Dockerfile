@@ -25,8 +25,7 @@ RUN apk add --no-cache \
                     ca-certificates
 
 RUN set -ex; \
-          mkdir /var/log/newrelic; \
-          touch /var/log/newrelic/newrelic-daemon.log
+          mkdir /var/log/newrelic
 
 COPY docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
 COPY --from=build /usr/bin/newrelic-daemon /usr/bin/newrelic-daemon
