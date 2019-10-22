@@ -28,8 +28,11 @@ RUN set -ex; \
           mkdir /var/log/newrelic; \
           touch /var/log/newrelic/newrelic-daemon.log
 
+COPY docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
 COPY --from=build /usr/bin/newrelic-daemon /usr/bin/newrelic-daemon
 
 EXPOSE 31339
 
-ENTRYPOINT ["/usr/bin/newrelic-daemon","--logfile","/proc/self/fd/1","--watchdog-foreground","--address=$(hostname):31339"]
+ENTRYPOINT ["sh","/usr/bin/docker-entrypoint.sh"]
+
+CMD ["/usr/bin/newrelic-daemon"]
