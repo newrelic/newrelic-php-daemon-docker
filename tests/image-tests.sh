@@ -26,7 +26,7 @@ run_tests() {
   verify_output "-n $(docker logs $name | grep ${1//\/})" $name "check the version"
 
   name=debug-daemon
-  docker run -d --name $name c-daemon 
+  docker run -d --name $name c-daemon --loglevel debug
   verify_output "-n $(docker logs $name | grep Debug)" $name "set the loglevel to debug"
 
   name=debug-daemon-with-cmd
