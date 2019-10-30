@@ -1,0 +1,6 @@
+language: php
+
+services:
+  - docker
+
+script: ./tests/image-tests.sh
