@@ -1,5 +1,7 @@
 # Daemon Docker Image
 
+[![Build Status](https://travis-ci.org/newrelic/newrelic-php-daemon-docker.svg?branch=master)](https://travis-ci.org/newrelic/newrelic-php-daemon-docker)
+
 This is a repository of base images for the New Relic Daemon. The New Relic Daemon is part of the New Relic PHP Agent. The Dockerfile in this repo is meant to make it easy to run the daemon in a separate container from the agent.
 
 ## Running the Image
