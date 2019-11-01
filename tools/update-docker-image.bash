@@ -23,4 +23,3 @@ sed s/"ENV[[:space:]]NEWRELIC_VERSION/ENV NEWRELIC_VERSION v${version}"/ ../Dock
 git checkout -b $version_short
 git add .
 git commit -m "version bump"
-git push origin $version_short
