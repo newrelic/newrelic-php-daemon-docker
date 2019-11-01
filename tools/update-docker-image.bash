@@ -13,8 +13,6 @@ wget -O /tmp/newrelic-php5-${version}-linux-musl.tar.gz https://download.newreli
 
 sha=$(sha256sum /tmp/newrelic-php5-${version}-linux-musl.tar.gz | awk '{print $1}')
 
-echo "${sha}"
-
 mkdir $version_short
 
 cp docker-entrypoint-template $version_short/docker-entrypoint.sh
