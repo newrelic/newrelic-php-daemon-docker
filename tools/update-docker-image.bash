@@ -9,7 +9,7 @@ fi
 version=$1
 version_short=$(echo $1 | awk -F "." '{print $1 "." $2 "." $3}')
 
-sudo yum install wget
+yes | sudo yum install wget
 
 wget -O /tmp/newrelic-php5-${version}-linux-musl.tar.gz https://download.newrelic.com/php_agent/archive/${version}/newrelic-php5-${version}-linux-musl.tar.gz;
 
