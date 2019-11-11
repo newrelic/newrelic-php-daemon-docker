@@ -9,6 +9,8 @@ fi
 version=$1
 version_short=$(echo $1 | awk -F "." '{print $1 "." $2 "." $3}')
 
+sudo apt-get install
+
 wget -O /tmp/newrelic-php5-${version}-linux-musl.tar.gz https://download.newrelic.com/php_agent/archive/${version}/newrelic-php5-${version}-linux-musl.tar.gz;
 
 sha=$(sha256sum /tmp/newrelic-php5-${version}-linux-musl.tar.gz | awk '{print $1}')
