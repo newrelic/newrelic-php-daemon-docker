@@ -10,7 +10,6 @@ defaultArgs=" --logfile /proc/self/fd/1 --watchdog-foreground --address=$(hostna
 case "$1" in
   -*)
     #args start with a flag
-        echo "case one"
     set -- /usr/bin/newrelic-daemon $defaultArgs "$@"
     ;;
   '/usr/bin/newrelic-daemon')
