@@ -7,13 +7,21 @@ set -e
 
 defaultArgs=" --logfile /proc/self/fd/1 --watchdog-foreground --address=$(hostname):31339"
 
-# this if will check if the first argument is a flag
-if [ "${1:0:1}" = '-' ]; then
-  set -- /usr/bin/newrelic-daemon $defaultArgs "$@"
-elif [ "$1" = '/usr/bin/newrelic-daemon' ]; then
-  # Remove the first element from the arguments
-  shift 1
-  set -- /usr/bin/newrelic-daemon $defaultArgs "$@"
-fi
+case "$1" in
+  -*)
+    #args start with a flag
+        echo "case one"
+    set -- /usr/bin/newrelic-daemon $defaultArgs "$@"
+    ;;
+  '/usr/bin/newrelic-daemon')
+    # Remove the first element from the arguments
+    shift 1
+    set -- /usr/bin/newrelic-daemon $defaultArgs "$@"
+    ;;
+  *)
+    #likely invalid args, but the daemon will handle it with graceful messages.
+    set -- /usr/bin/newrelic-daemon $defaultArgs "$@"
+    ;;
+esac
 
 exec "$@"
