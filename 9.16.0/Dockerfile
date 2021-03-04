@@ -4,11 +4,11 @@
 #------------------------------------------------------------------------------
 
 
-FROM alpine:3.10 AS build
+FROM alpine:3.13 AS build
 
 ENV NEWRELIC_VERSION 9.16.0.295
 ENV NEWRELIC_NAME newrelic-php5-${NEWRELIC_VERSION}-linux-musl
-ENV NEWRELIC_SHA 0a91f62fff9d7dd408c217538ad763f8cc91e9e60380b0a4abefcd9c99c14c1b 
+ENV NEWRELIC_SHA 0a91f62fff9d7dd408c217538ad763f8cc91e9e60380b0a4abefcd9c99c14c1b
 
 RUN set -ex; \
         wget -O /tmp/${NEWRELIC_NAME}.tar.gz https://download.newrelic.com/php_agent/archive/${NEWRELIC_VERSION}/${NEWRELIC_NAME}.tar.gz; \
@@ -18,7 +18,7 @@ RUN set -ex; \
         export NR_INSTALL_SILENT=1; \
         ${NEWRELIC_NAME}/newrelic-install install_daemon
 
-FROM alpine:3.10
+FROM alpine:3.13
 
 # The daemon needs certs installed to run
 RUN apk add --no-cache \
