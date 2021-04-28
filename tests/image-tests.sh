@@ -52,6 +52,11 @@ run_tests() {
   docker run -d --name $name -v $PWD/newrelic.cfg:/etc/newrelic/newrelic.cfg c-daemon --c /etc/newrelic/newrelic.cfg
   verify_output $name "set the loglevel to debug using cfg file" -n "$(docker logs $name | grep Debug)"
 
+  name=other-cmd
+  docker run -d --name $name c-daemon pwd
+  verify_output $name "test another command not preceded by a flag is run" -n "$(docker logs $name | grep '/')"
+
+
 }
 
 versions=$(find . -maxdepth 1 -type d -name '[0-9]*' -exec basename {} \;)
