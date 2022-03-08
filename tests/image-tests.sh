@@ -29,7 +29,9 @@ run_tests() {
 
   name=version-check
   docker run -d --name $name c-daemon
-  docker_logs=$(docker logs $name | grep ${1//\/})
+  docker --version
+  docker logs $name
+  docker_logs="$(docker logs $name | grep ${1//\/})"
   echo "docker logs==== " $docker_logs
   verify_output $name "check the version" -n "$(docker logs $name | grep ${1//\/})"
 
