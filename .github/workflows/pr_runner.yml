@@ -29,4 +29,6 @@ jobs:
       - name: Run tests
         run: |
           echo Running tests 
+          chmod +x ./tests/image-tests.sh
           ./tests/image-tests.sh
+      shell: bash
