@@ -1,0 +1,19 @@
+name: create-new-image
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        required: true
+
+jobs:
+  create-new-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Create new docker image and push branch
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          TESTING_BUCKET=${{ secrets.TESTING_BUCKET }}
+          ./tools/update-docker-image.bash ${{ inputs.version }}

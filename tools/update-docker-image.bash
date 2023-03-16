@@ -26,3 +26,6 @@ sed \
 git checkout -b $version_short
 git add .
 git commit -m "version bump to ${version_short}"
+git tag -a v$version_short -m "GHA created tag"
+git push origin HEAD
+git push origin --tags
