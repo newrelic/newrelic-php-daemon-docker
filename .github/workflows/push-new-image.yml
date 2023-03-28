@@ -7,7 +7,7 @@ on:
         required: true
 
 jobs:
-  create-new-image:
+  push-new-image:
     runs-on: ubuntu-latest
     steps:
       - name: Extract short version

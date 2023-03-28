@@ -1,4 +1,4 @@
-name: create-new-image
+name: create-new-dockerfile
 
 on:
   workflow_dispatch:
@@ -7,11 +7,11 @@ on:
         required: true
 
 jobs:
-  create-new-image:
+  create-new-dockerfile:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Create new docker image and push branch
+      - name: Create new dockerfile and push branch
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
