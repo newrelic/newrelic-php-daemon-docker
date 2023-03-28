@@ -9,7 +9,7 @@ fi
 version=$1
 version_short=$(echo $1 | awk -F "." '{print $1 "." $2 "." $3}')
 
-wget -O /tmp/newrelic-php5-${version}-linux-musl.tar.gz ${TESTING_BUCKET}/newrelic-php5-${version}-linux-musl.tar.gz;
+wget -O /tmp/newrelic-php5-${version}-linux-musl.tar.gz ${DOWNLOAD_URL}/newrelic-php5-${version}-linux-musl.tar.gz;
 
 sha=$(sha256sum /tmp/newrelic-php5-${version}-linux-musl.tar.gz | awk '{print $1}')
 

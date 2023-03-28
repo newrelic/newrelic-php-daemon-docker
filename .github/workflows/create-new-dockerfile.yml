@@ -12,8 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Create new dockerfile and push branch
+        env:
+          DOWNLOAD_URL: ${{ secrets.DOWNLOAD_URL }}
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
-          TESTING_BUCKET=${{ secrets.TESTING_BUCKET }}
           ./tools/update-docker-image.bash ${{ inputs.version }}
