@@ -60,11 +60,19 @@ run_tests() {
 
 }
 
-versions=$(find . -maxdepth 1 -type d -name '[0-9]*' -exec basename {} \;)
-for dir in ${versions}; do
-  pushd $dir
-  run_tests $dir
+version=$1
+
+if [[ -z $version || ! -d $version ]]; then
+  versions=$(find . -maxdepth 1 -type d -name '[0-9]*' -exec basename {} \;)
+  for dir in ${versions}; do
+    pushd $dir
+    run_tests $dir
+    popd
+  done
+else
+  pushd $version
+  run_tests $version
   popd
-done
+fi
 
 exit
