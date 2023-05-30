@@ -26,4 +26,4 @@ jobs:
         with:
           context: "{{defaultContext}}:${{ env.version_short }}"
           push: true
-          tags: newrelic/php_daemon:latest,newrelic/php-daemon:${{ env.version_short }} 
+          tags: newrelic/php-daemon:latest,newrelic/php-daemon:${{ env.version_short }} 
