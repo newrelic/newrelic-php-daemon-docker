@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -ex
 
-if [[ ! "$1" =~ [0-9]+\.[0-9]+\.[0-9]+\.[0-9]{3} ]]; then
+if [[ ! "$1" =~ [0-9]+\.[0-9]+\.[0-9]+\.[0-9]+ ]]; then
   echo "ERROR: A full version string must be passed in"
   exit 1
 fi
