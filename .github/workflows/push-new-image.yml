@@ -27,3 +27,4 @@ jobs:
           context: "{{defaultContext}}:${{ env.version_short }}"
           push: true
           tags: newrelic/php-daemon:latest,newrelic/php-daemon:${{ env.version_short }} 
+          platforms: linux/amd64, linux/arm64
