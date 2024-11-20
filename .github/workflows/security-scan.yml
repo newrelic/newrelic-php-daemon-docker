@@ -1,6 +1,6 @@
 name: Security scan
 on:
-  # Run only on version bump pull requests that modify Dockerfile
+  # Run only on pushes to version bump pull requests that modify Dockerfile
   push:
     paths:
       - '**/Dockerfile'
