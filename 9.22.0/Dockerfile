@@ -18,7 +18,7 @@ RUN set -ex; \
         export NR_INSTALL_SILENT=1; \
         ${NEWRELIC_NAME}/newrelic-install install_daemon
 
-FROM alpine
+FROM alpine:3.13
 
 COPY --from=build /usr/bin/newrelic-daemon /bin/newrelic-daemon
 
