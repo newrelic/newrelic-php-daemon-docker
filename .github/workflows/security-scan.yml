@@ -19,7 +19,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: fs
-          scan-ref: ./${{ github.head_ref }}
+          scan-ref: ./${{ github.ref_name }}
           trivy-config: ./trivy.yaml
           format: table
           exit-code: 1
