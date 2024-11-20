@@ -22,6 +22,8 @@ FROM alpine:3.13
 
 COPY --from=build /usr/bin/newrelic-daemon /bin/newrelic-daemon
 
+HEALTHCHECK --interval=5s --timeout=1s --start-period=1s --retries=3 CMD pidof newrelic-daemon || exit 1
+
 EXPOSE 31339
 
 ENTRYPOINT [ "/bin/newrelic-daemon" ]
