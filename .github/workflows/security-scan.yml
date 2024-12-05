@@ -34,7 +34,7 @@ jobs:
         with:
           scan-type: image
           scan-ref: newrelic/php-daemon:latest
-          trivy-config: ./newrelic-php-daemon-docker/trivy.yaml
+          trivy-config: ./trivy.yaml
           format: sarif
           output: trivy-results.sarif
 
