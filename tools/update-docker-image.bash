@@ -19,8 +19,8 @@ cp docker-entrypoint-template $version_short/docker-entrypoint.sh
 cd $version_short
 
 sed \
-   -e s/"ENV[[:space:]]NEWRELIC_VERSION/ENV NEWRELIC_VERSION ${version}"/ \
-   -e s/"ENV[[:space:]]NEWRELIC_SHA/ENV NEWRELIC_SHA ${sha}"/ \
+   -e s/"ENV[[:space:]]NEWRELIC_VERSION/ENV NEWRELIC_VERSION=${version}"/ \
+   -e s/"ENV[[:space:]]NEWRELIC_SHA/ENV NEWRELIC_SHA=${sha}"/ \
     ../Dockerfile-template > Dockerfile
 
 git checkout -b $version_short
