@@ -7,7 +7,7 @@
 FROM alpine:3.21 AS build
 
 ENV NEWRELIC_VERSION
-ENV NEWRELIC_NAME newrelic-php5-${NEWRELIC_VERSION}-linux-musl
+ENV NEWRELIC_NAME=newrelic-php5-${NEWRELIC_VERSION}-linux-musl
 ENV NEWRELIC_SHA
 
 RUN set -ex; \
