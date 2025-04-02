@@ -58,6 +58,11 @@ run_tests() {
   sleep 10
   verify_output $name "set the loglevel to debug using cfg file" -n "$(docker logs $name | grep Debug)"
 
+  name=other-cmd
+  docker run -d --name $name c-daemon pwd
+  verify_output $name "test another command not preceded by a flag is run" -n "$(docker logs $name | grep '/')"
+
+
 }
 
 version=$1
