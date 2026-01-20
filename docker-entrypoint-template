@@ -17,10 +17,6 @@ case "$1" in
     shift 1
     set -- /usr/bin/newrelic-daemon $defaultArgs "$@"
     ;;
-  *)
-    #likely invalid args, but the daemon will handle it with graceful messages.
-    set -- /usr/bin/newrelic-daemon $defaultArgs "$@"
-    ;;
 esac
 
 exec "$@"
