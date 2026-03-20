@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Run Trivy in table mode
         # Table output is only useful when running on a pull request or push.
         if: contains(fromJSON('["push"]'), github.event_name)
