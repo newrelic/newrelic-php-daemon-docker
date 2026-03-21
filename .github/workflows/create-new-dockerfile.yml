@@ -10,7 +10,7 @@ jobs:
   create-new-dockerfile:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
       - name: Create new dockerfile and push branch
         env:
           DOWNLOAD_URL: ${{ secrets.DOWNLOAD_URL }}
