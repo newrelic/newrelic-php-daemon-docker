@@ -1,4 +1,5 @@
 name: push-new-image
+permissions: {}
 
 on:
   workflow_dispatch:

@@ -1,4 +1,5 @@
 name: Security scan
+permissions: {}
 on:
   # Run only on pushes to version bump pull requests that modify Dockerfile
   push:
