@@ -1,4 +1,5 @@
 name: Security scan
+permissions: {}
 on:
   # Run only on pushes to version bump pull requests that modify Dockerfile
   push:
@@ -13,6 +14,9 @@ on:
 jobs:
   trivy-scan:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
