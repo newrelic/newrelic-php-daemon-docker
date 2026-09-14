@@ -20,6 +20,12 @@ RUN set -ex; \
 
 FROM alpine:3.24@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
 
+# alpine doesn't automatically make patch versions unless there are severe CVEs
+# as such, there will be a time lag between packages getting updated and them
+# being rolled into the next alpine release
+# make sure we get all updated packages
+RUN apk update && apk upgrade --no-cache
+
 # The daemon needs certs installed to run
 RUN apk add --no-cache \
                     ca-certificates
