@@ -1,0 +1,43 @@
+#------------------------------------------------------------------------------
+# Copyright [2019] New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#------------------------------------------------------------------------------
+
+
+FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS build
+
+ENV NEWRELIC_VERSION=12.12.0.41
+ENV NEWRELIC_NAME=newrelic-php5-${NEWRELIC_VERSION}-linux-musl
+ENV NEWRELIC_SHA=b93a0f11dc9a65ae8ca992dc8edd8db756591eccbdb74308f744840acde4e24f
+
+RUN set -ex; \
+        wget -O /tmp/${NEWRELIC_NAME}.tar.gz https://download.newrelic.com/php_agent/archive/${NEWRELIC_VERSION}/${NEWRELIC_NAME}.tar.gz; \
+        cd /tmp/; \
+        echo "$NEWRELIC_SHA  $NEWRELIC_NAME.tar.gz" | sha256sum -c; \
+        tar -xzf ${NEWRELIC_NAME}.tar.gz; \
+        export NR_INSTALL_SILENT=1; \
+        ${NEWRELIC_NAME}/newrelic-install install_daemon
+
+FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+
+# alpine doesn't automatically make patch versions unless there are severe CVEs
+# as such, there will be a time lag between packages getting updated and them
+# being rolled into the next alpine release
+# make sure we get all updated packages
+RUN apk update && apk upgrade --no-cache
+
+# The daemon needs certs installed to run
+RUN apk add --no-cache \
+                    ca-certificates
+
+RUN set -ex; \
+          mkdir /var/log/newrelic
+
+COPY docker-entrypoint.sh /usr/bin/docker-entrypoint.sh
+COPY --from=build /usr/bin/newrelic-daemon /usr/bin/newrelic-daemon
+
+EXPOSE 31339
+
+ENTRYPOINT ["sh","/usr/bin/docker-entrypoint.sh"]
+
+CMD ["/usr/bin/newrelic-daemon"]
