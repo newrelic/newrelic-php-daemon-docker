@@ -17,7 +17,12 @@ jobs:
       - name: Create new dockerfile and push branch
         env:
           DOWNLOAD_URL: ${{ secrets.DOWNLOAD_URL }}
+          VERSION: ${{ inputs.version }}
         run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){3}$ ]]; then
+            echo "version must look like 12.12.0.41"
+            exit 1
+          fi
           git config user.name github-actions
           git config user.email github-actions@github.com
-          ./tools/update-docker-image.bash ${{ inputs.version }}
+          ./tools/update-docker-image.bash "$VERSION"
