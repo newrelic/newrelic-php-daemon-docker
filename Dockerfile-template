@@ -4,7 +4,7 @@
 #------------------------------------------------------------------------------
 
 
-FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS build
+FROM alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a AS build
 
 ENV NEWRELIC_VERSION
 ENV NEWRELIC_NAME=newrelic-php5-${NEWRELIC_VERSION}-linux-musl
@@ -18,7 +18,7 @@ RUN set -ex; \
         export NR_INSTALL_SILENT=1; \
         ${NEWRELIC_NAME}/newrelic-install install_daemon
 
-FROM alpine:3.24@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
+FROM alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a
 
 # alpine doesn't automatically make patch versions unless there are severe CVEs
 # as such, there will be a time lag between packages getting updated and them
