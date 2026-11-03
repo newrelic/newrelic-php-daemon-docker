@@ -11,7 +11,7 @@ jobs:
   push-new-image:
     runs-on: ubuntu-latest
     # Publishing to Docker Hub uses the credentials of this environment (branch rule and approval are set on it).
-    environment: docker-hub-publish
+    environment: dockerhub
     steps:
       - name: Extract short version
         env:
