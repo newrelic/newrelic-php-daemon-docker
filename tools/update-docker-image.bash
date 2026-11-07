@@ -8,8 +8,15 @@ fi
 
 version=$1
 version_short=$(echo $1 | awk -F "." '{print $1 "." $2 "." $3}')
+tools_dir=$(cd "$(dirname "$0")" && pwd)
 
-wget -O /tmp/newrelic-php5-${version}-linux-musl.tar.gz ${DOWNLOAD_URL}/newrelic-php5-${version}-linux-musl.tar.gz;
+# DOWNLOAD_URL is the archive of the download site: ${DOWNLOAD_URL}/<version>/<file>, the place the Dockerfile downloads from
+wget -O /tmp/newrelic-php5-${version}-linux-musl.tar.gz ${DOWNLOAD_URL}/${version}/newrelic-php5-${version}-linux-musl.tar.gz;
+wget -O /tmp/newrelic-php5-${version}-linux-musl.tar.gz.asc ${DOWNLOAD_URL}/${version}/newrelic-php5-${version}-linux-musl.tar.gz.asc \
+  || { echo "ERROR: the signature of the tarball could not be downloaded"; exit 1; }
+
+# Pin the hash of a tarball only after its signature is verified
+"${tools_dir}/verify-tarball.bash" /tmp/newrelic-php5-${version}-linux-musl.tar.gz /tmp/newrelic-php5-${version}-linux-musl.tar.gz.asc
 
 sha=$(sha256sum /tmp/newrelic-php5-${version}-linux-musl.tar.gz | awk '{print $1}')
 

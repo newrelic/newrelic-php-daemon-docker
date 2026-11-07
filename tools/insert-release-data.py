@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+
+#
+# Copyright 2026 New Relic Corporation. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+
+"""Add the entry of one image to release-data/daemon-image-digests.json.
+
+usage: insert-release-data.py <data-file> <entry-file> <schema-file>
+
+<entry-file> holds the entry of one image as written by digest-entry.bash. The entry is inserted
+in version order, newest first, comparing the version numbers part by part (12.10.0 is newer than
+12.9.0), and replaces an entry with the same version.
+
+The file is written in a fixed format (sorted keys, two-space indent), so that the change to the
+file is only the new entry. The script stops without writing anything if
+  * the file or the result does not match the schema,
+  * the file is not in that format, or its entries are not in version order (rewriting it would
+    change more than the new entry),
+  * the entry has a version that is not made of numbers separated by dots.
+"""
+
+import json
+import sys
+
+import jsonschema
+
+
+def version_key(version):
+    """Return the version as a tuple of numbers, so that 12.10.0 sorts after 12.9.0."""
+    try:
+        return tuple(int(part) for part in version.split("."))
+    except ValueError:
+        raise SystemExit("the version %r is not made of numbers separated by dots" % version)
+
+
+def dump(data):
+    return json.dumps(data, indent=2, sort_keys=True) + "\n"
+
+
+def list_name(data):
+    """Return the name of the list of entries in the file: images or releases."""
+    for name in ("images", "releases"):
+        if name in data:
+            return name
+    raise SystemExit("the file has neither an images nor a releases list")
+
+
+def insert(data, entry):
+    """Return data with the entry added in version order, and the replaced entry or None."""
+    name = list_name(data)
+    replaced = None
+    kept = []
+    for existing in data[name]:
+        if existing["version"] == entry["version"]:
+            replaced = existing
+        else:
+            kept.append(existing)
+    kept.append(entry)
+    kept.sort(key=lambda item: version_key(item["version"]), reverse=True)
+    return {name: kept}, replaced
+
+
+def main(argv):
+    if len(argv) != 4:
+        print(__doc__, file=sys.stderr)
+        return 2
+    data_file, entry_file, schema_file = argv[1:4]
+
+    with open(schema_file) as handle:
+        schema = json.load(handle)
+    with open(data_file) as handle:
+        text = handle.read()
+    data = json.loads(text)
+    with open(entry_file) as handle:
+        entry = json.load(handle)
+    name = list_name(data)
+
+    # Check the entry on its own: the schema describes the whole file.
+    jsonschema.validate({name: [entry]}, schema)
+    jsonschema.validate(data, schema)
+
+    # The file must already be in the format this script writes and in version order.
+    # Otherwise rewriting it would change more than the new entry.
+    if text != dump(data):
+        raise SystemExit("%s is not in the format this script writes (sorted keys, two-space indent); "
+                         "fix it first" % data_file)
+    versions = [version_key(item["version"]) for item in data[name]]
+    if versions != sorted(versions, reverse=True) or len(set(versions)) != len(versions):
+        raise SystemExit("%s is not in version order, newest first, without duplicates; fix it first" % data_file)
+
+    result, replaced = insert(data, entry)
+    jsonschema.validate(result, schema)
+
+    # Nothing but the new entry may change.
+    others_before = [item for item in data[name] if item["version"] != entry["version"]]
+    others_after = [item for item in result[name] if item["version"] != entry["version"]]
+    if others_before != others_after:
+        raise SystemExit("the other entries would change; not writing")
+
+    with open(data_file, "w") as handle:
+        handle.write(dump(result))
+    print("%s %s in %s" % ("replaced" if replaced else "added", entry["version"], data_file))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
