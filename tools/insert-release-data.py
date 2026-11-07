@@ -79,7 +79,7 @@ def main(argv):
     name = list_name(data)
 
     # Check the entry on its own: the schema describes the whole file.
-    jsonschema.validate({name: [entry]}, schema)
+    jsonschema.validate(dict(data, **{name: [entry]}), schema)
     jsonschema.validate(data, schema)
 
     # The file must already be in the format this script writes and in version order.

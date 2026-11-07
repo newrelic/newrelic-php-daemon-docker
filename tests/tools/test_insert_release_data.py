@@ -21,7 +21,7 @@ DIGEST = "sha256:" + "a" * 64
 SCHEMA = {
     "type": "object",
     "additionalProperties": False,
-    "required": ["images"],
+    "required": ["first_image_version", "images"],
     "properties": {
         "first_image_version": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]+)+$"},
         "images": {
@@ -68,7 +68,7 @@ class InsertImageDigest(unittest.TestCase):
         return path
 
     def run_script(self, images, new_entry, raw=None):
-        data_file = self.write("data.json", raw if raw is not None else insert_release_data.dump({"images": images}))
+        data_file = self.write("data.json", raw if raw is not None else insert_release_data.dump({"first_image_version": "9.2.0", "images": images}))
         entry_file = self.write("entry.json", json.dumps(new_entry))
         status = insert_release_data.main(["x", data_file, entry_file, self.schema_file])
         self.assertEqual(status, 0)
@@ -99,7 +99,7 @@ class InsertImageDigest(unittest.TestCase):
         self.assertEqual(images[0]["digest"], other)
 
     def test_only_the_new_entry_changes_in_the_text(self):
-        before = insert_release_data.dump({"images": [entry("12.12.0"), entry("12.1.0")]})
+        before = insert_release_data.dump({"first_image_version": "9.2.0", "images": [entry("12.12.0"), entry("12.1.0")]})
         after = self.run_script([entry("12.12.0"), entry("12.1.0")], entry("12.9.0"), raw=before)
         removed = [line for line in before.splitlines() if line not in after.splitlines()]
         self.assertEqual(removed, [])
@@ -112,10 +112,10 @@ class InsertImageDigest(unittest.TestCase):
 
     def test_stops_on_a_file_that_is_not_in_the_written_format(self):
         with self.assertRaises(SystemExit):
-            self.run_script([], entry("12.12.0"), raw=json.dumps({"images": []}))
+            self.run_script([], entry("12.12.0"), raw=json.dumps({"first_image_version": "9.2.0", "images": []}))
 
     def test_stops_on_a_file_that_is_not_in_version_order(self):
-        raw = insert_release_data.dump({"images": [entry("12.1.0"), entry("12.12.0")]})
+        raw = insert_release_data.dump({"first_image_version": "9.2.0", "images": [entry("12.1.0"), entry("12.12.0")]})
         with self.assertRaises(SystemExit):
             self.run_script([], entry("12.9.0"), raw=raw)
 
@@ -128,7 +128,7 @@ class InsertImageDigest(unittest.TestCase):
             self.run_script([], entry("12.12.0-rc1"))
 
     def test_does_not_write_when_it_stops(self):
-        raw = json.dumps({"images": []})
+        raw = json.dumps({"first_image_version": "9.2.0", "images": []})
         data_file = self.write("data.json", raw)
         entry_file = self.write("entry.json", json.dumps(entry("12.12.0")))
         with self.assertRaises(SystemExit):

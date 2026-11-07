@@ -27,13 +27,6 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Checkout the agent repository
-      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
-      with:
-        repository: newrelic/newrelic-php-agent
-        ref: main
-        path: php-agent
-        token: ${{ inputs.token }}
     - name: Install the schema validator
       shell: bash
       run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends python3-jsonschema jq
@@ -52,16 +45,25 @@ runs:
         # The image tag is the agent version without the build number.
         TAG=$(cut -d. -f1-3 <<< "$VERSION")
         "$TOOLS/tools/digest-entry.bash" "$TAG" "$DIGEST" | tee entry.json
-    - name: Add the entry to the list of image digests
+    # The complete new file is built from the public copy of the agent repository, so it exists even if the
+    # token does not work: copy it to release-data/ in the agent repository and open the pull request by hand.
+    - name: Build the complete new list of image digests
       shell: bash
       env:
+        VERSION: ${{ inputs.version }}
         TOOLS: ${{ inputs.tools }}
       run: |
         set -euo pipefail
-        "$TOOLS/tools/insert-release-data.py" \
-          php-agent/release-data/daemon-image-digests.json entry.json \
-          php-agent/release-data/schema/daemon-image-digests.schema.json
-        git -C php-agent diff --stat
+        "$TOOLS/tools/make-replacement-file.bash" --entry entry.json \
+          --title "chore(release-data): add daemon image digest for ${VERSION}" replacement
+    - name: Upload the complete new list
+      if: ${{ always() }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # 7.0.2
+      with:
+        name: replacement-release-data
+        path: replacement
+        if-no-files-found: ignore
+        overwrite: true
     - name: Dry run summary
       if: ${{ inputs.dry-run == 'true' }}
       shell: bash
@@ -76,9 +78,17 @@ runs:
           echo 'If this were not a dry run, a pull request would be opened in newrelic/newrelic-php-agent titled `chore(release-data): add daemon image digest for '"${VERSION}"'` with this change:'
           echo
           echo '```diff'
-          git -C php-agent diff
+          cat replacement/change.diff
           echo '```'
         } >> "$GITHUB_STEP_SUMMARY"
+    - name: Checkout the agent repository
+      if: ${{ inputs.dry-run != 'true' }}
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+      with:
+        repository: newrelic/newrelic-php-agent
+        ref: main
+        path: php-agent
+        token: ${{ inputs.token }}
     - name: Open the pull request
       if: ${{ inputs.dry-run != 'true' }}
       shell: bash
@@ -88,6 +98,7 @@ runs:
         RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       run: |
         set -euo pipefail
+        cp replacement/daemon-image-digests.json php-agent/release-data/daemon-image-digests.json
         cd php-agent
         if git diff --quiet; then
           echo "::notice::release-data/daemon-image-digests.json already has this digest for ${VERSION}"
