@@ -34,6 +34,13 @@ jobs:
         run: echo "branch=${HEAD_REF}" >>"$GITHUB_OUTPUT"
         id: extract_branch
 
+      # Tests of the tools that verify the tarball and make the data for the release data
+      - name: Run the tests of the tools
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends python3-jsonschema jq
+          for test in tests/tools/test-*.bash; do bash "$test"; done
+          python3 -m unittest discover -s tests/tools
+
       # Runs the test scripts using the runner's shell
       - name: Run tests
         env:

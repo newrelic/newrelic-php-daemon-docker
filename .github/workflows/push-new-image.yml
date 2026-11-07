@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     # Publishing to Docker Hub uses the credentials of this environment (branch rule and approval are set on it).
     environment: dockerhub
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
     steps:
       - name: Extract short version
         env:
@@ -33,9 +35,35 @@ jobs:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_WRITE_PAT }}
       - name: Build and Push
+        id: build
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # 7.4.0
         with:
           context: "{{defaultContext}}:${{ env.version_short }}"
           push: true
           tags: newrelic/php-daemon:latest,newrelic/php-daemon:${{ env.version_short }} 
           platforms: linux/amd64,linux/arm64
+      - name: Show the digest of the image
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          echo "Pushed newrelic/php-daemon:${version_short} with digest ${DIGEST}" >> "$GITHUB_STEP_SUMMARY"
+  # Add the digest to the release data of the agent repository (a pull request that needs a phpc approval).
+  publish-digest:
+    needs: [push-new-image]
+    # The environment holds the token that can open pull requests in the agent repository.
+    environment: release-data
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+        with:
+          path: php-daemon
+          persist-credentials: false
+      - uses: ./php-daemon/.github/actions/publish-digest
+        with:
+          version: ${{ inputs.version }}
+          digest: ${{ needs.push-new-image.outputs.digest }}
+          dry-run: 'false'
+          token: ${{ secrets.NR_PHP_AGENT_REPO_GH_TOKEN }}

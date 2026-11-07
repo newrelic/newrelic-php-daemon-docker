@@ -1,0 +1,118 @@
+name: publish-digest
+description: >
+  Add the digest of a published daemon image to release-data/daemon-image-digests.json in the
+  newrelic-php-agent repository, through a pull request. The calling job checks out this
+  repository, declares the release-data environment and passes its token.
+
+inputs:
+  version:
+    description: 'Agent version of the image, e.g. 12.12.0.41'
+    required: true
+  digest:
+    description: 'Digest that the push reported (optional; the tag is checked against it)'
+    required: false
+    default: ''
+  dry-run:
+    description: 'true: show the change to the release data without opening a pull request'
+    required: false
+    default: 'true'
+  token:
+    description: 'Token that can open pull requests in newrelic-php-agent'
+    required: true
+  tools:
+    description: 'Path of the checkout of this repository'
+    required: false
+    default: php-daemon
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout the agent repository
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+      with:
+        repository: newrelic/newrelic-php-agent
+        ref: main
+        path: php-agent
+        token: ${{ inputs.token }}
+    - name: Install the schema validator
+      shell: bash
+      run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends python3-jsonschema jq
+    - name: Get the entry of the image from the registry
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        DIGEST: ${{ inputs.digest }}
+        TOOLS: ${{ inputs.tools }}
+      run: |
+        set -euo pipefail
+        if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){3}$ ]]; then
+          echo "::error::version must look like 12.12.0.41"
+          exit 1
+        fi
+        # The image tag is the agent version without the build number.
+        TAG=$(cut -d. -f1-3 <<< "$VERSION")
+        "$TOOLS/tools/digest-entry.bash" "$TAG" "$DIGEST" | tee entry.json
+    - name: Add the entry to the list of image digests
+      shell: bash
+      env:
+        TOOLS: ${{ inputs.tools }}
+      run: |
+        set -euo pipefail
+        "$TOOLS/tools/insert-release-data.py" \
+          php-agent/release-data/daemon-image-digests.json entry.json \
+          php-agent/release-data/schema/daemon-image-digests.schema.json
+        git -C php-agent diff --stat
+    - name: Dry run summary
+      if: ${{ inputs.dry-run == 'true' }}
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: |
+        {
+          echo '## DRY RUN: the pull request was not opened'
+          echo
+          echo '**This is a dry run. Nothing was pushed and no pull request was opened.**'
+          echo
+          echo 'If this were not a dry run, a pull request would be opened in newrelic/newrelic-php-agent titled `chore(release-data): add daemon image digest for '"${VERSION}"'` with this change:'
+          echo
+          echo '```diff'
+          git -C php-agent diff
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+    - name: Open the pull request
+      if: ${{ inputs.dry-run != 'true' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        VERSION: ${{ inputs.version }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        set -euo pipefail
+        cd php-agent
+        if git diff --quiet; then
+          echo "::notice::release-data/daemon-image-digests.json already has this digest for ${VERSION}"
+          exit 0
+        fi
+        BRANCH="release-data/add-daemon-image-digest-${VERSION}"
+        # Run again after a failure: nothing to do if the pull request is open, otherwise the
+        # branch of an earlier attempt is replaced.
+        if [ "$(gh pr list --head "$BRANCH" --state open --json number --jq length)" != 0 ]; then
+          echo "::notice::the pull request for ${VERSION} is already open"
+          exit 0
+        fi
+        git config user.name 'github-actions[bot]'
+        git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+        git checkout -b "$BRANCH"
+        git add release-data/daemon-image-digests.json
+        git commit -m "chore(release-data): add daemon image digest for ${VERSION}"
+        git push --force origin "$BRANCH"
+        {
+          echo "Adds the digest of the newrelic/php-daemon image for ${VERSION} to \`release-data/daemon-image-digests.json\`."
+          echo
+          echo "The digest and the digests of the platform images come from the registry, and the push time from Docker Hub, right after the push: ${RUN_URL}"
+          echo
+          echo 'This pull request needs an approval from the PHP agent team.'
+        } > "$RUNNER_TEMP/body.md"
+        gh pr create --base main --head "$BRANCH" \
+          --title "chore(release-data): add daemon image digest for ${VERSION}" \
+          --body-file "$RUNNER_TEMP/body.md"
