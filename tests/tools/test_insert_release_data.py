@@ -23,6 +23,7 @@ SCHEMA = {
     "additionalProperties": False,
     "required": ["images"],
     "properties": {
+        "first_image_version": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]+)+$"},
         "images": {
             "type": "array",
             "items": {
@@ -102,6 +103,12 @@ class InsertImageDigest(unittest.TestCase):
         after = self.run_script([entry("12.12.0"), entry("12.1.0")], entry("12.9.0"), raw=before)
         removed = [line for line in before.splitlines() if line not in after.splitlines()]
         self.assertEqual(removed, [])
+
+    def test_keeps_first_image_version(self):
+        before = insert_release_data.dump({"first_image_version": "9.2.0", "images": [entry("12.12.0")]})
+        text = self.run_script([], entry("12.13.0"), raw=before)
+        self.assertEqual(json.loads(text)["first_image_version"], "9.2.0")
+        self.assertEqual([i["version"] for i in json.loads(text)["images"]], ["12.13.0", "12.12.0"])
 
     def test_stops_on_a_file_that_is_not_in_the_written_format(self):
         with self.assertRaises(SystemExit):

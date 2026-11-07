@@ -59,7 +59,8 @@ def insert(data, entry):
             kept.append(existing)
     kept.append(entry)
     kept.sort(key=lambda item: version_key(item["version"]), reverse=True)
-    return {name: kept}, replaced
+    # keep the other top-level fields, such as first_image_version
+    return dict(data, **{name: kept}), replaced
 
 
 def main(argv):
