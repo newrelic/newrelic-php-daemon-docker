@@ -48,6 +48,7 @@ runs:
     # The complete new file is built from the public copy of the agent repository, so it exists even if the
     # token does not work: copy it to release-data/ in the agent repository and open the pull request by hand.
     - name: Build the complete new list of image digests
+      id: build
       shell: bash
       env:
         VERSION: ${{ inputs.version }}
@@ -56,6 +57,8 @@ runs:
         set -euo pipefail
         "$TOOLS/tools/make-replacement-file.bash" --entry entry.json \
           --title "chore(release-data): add daemon image digest for ${VERSION}" replacement
+        # The pull request is made from this commit, so a change that reached main since then is not reverted.
+        echo "base=$(cat replacement/BASE_COMMIT)" >> "$GITHUB_OUTPUT"
     - name: Upload the complete new list
       if: ${{ always() }}
       uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # 7.0.2
@@ -86,7 +89,7 @@ runs:
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
       with:
         repository: newrelic/newrelic-php-agent
-        ref: main
+        ref: ${{ steps.build.outputs.base }}
         path: php-agent
         token: ${{ inputs.token }}
     - name: Open the pull request
