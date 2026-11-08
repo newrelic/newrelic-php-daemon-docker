@@ -60,7 +60,10 @@ gpg --batch --import "$WORK/key.asc" 2> /dev/null || fail "cannot import the pub
 IMPORTED=$(gpg --batch --with-colons --list-keys | awk -F: '/^fpr:/ {print $10; exit}')
 [[ $IMPORTED = "$FINGERPRINT" ]] || fail "the public key at $KEY_URL is $IMPORTED, not the listed key $FINGERPRINT"
 
-# The primary key fingerprint is the last field of the VALIDSIG status line.
+# The primary key fingerprint is the last field of the VALIDSIG status line. The pattern is anchored with
+# $ so that the fingerprint must be that field: gpg prints no fingerprint in the fields before it except the
+# one of the signing key, and the keyring holds only the key whose fingerprint was compared above. The anchor
+# is a safeguard that real gpg output cannot test.
 STATUS=$(gpg --batch --status-fd 1 --verify "$SIGNATURE" "$TARBALL" 2> /dev/null || true)
 grep -q "^\[GNUPG:\] VALIDSIG .* $FINGERPRINT\$" <<< "$STATUS" \
   || fail "the signature $SIGNATURE is not a valid signature of $TARBALL by the key $FINGERPRINT"
