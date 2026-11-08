@@ -64,5 +64,9 @@ IMPORTED=$(gpg --batch --with-colons --list-keys | awk -F: '/^fpr:/ {print $10; 
 STATUS=$(gpg --batch --status-fd 1 --verify "$SIGNATURE" "$TARBALL" 2> /dev/null || true)
 grep -q "^\[GNUPG:\] VALIDSIG .* $FINGERPRINT\$" <<< "$STATUS" \
   || fail "the signature $SIGNATURE is not a valid signature of $TARBALL by the key $FINGERPRINT"
+# gpg also prints VALIDSIG for a revoked or an expired key, next to one of these lines.
+if grep -qE '^\[GNUPG:\] (REVKEYSIG|EXPKEYSIG|KEYEXPIRED|EXPSIG) ' <<< "$STATUS"; then
+  fail "the key $FINGERPRINT is revoked or expired, or the signature has expired"
+fi
 
 echo "verified $(basename "$TARBALL") signed by $FINGERPRINT"

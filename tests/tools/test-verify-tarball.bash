@@ -79,6 +79,12 @@ expect fail 'a missing signature' V fp.json t.tar.gz missing.asc
 expect fail 'a missing tarball' V fp.json missing.tar.gz t.tar.gz.asc
 expect fail 'no arguments' "$VERIFY"
 
+# A revoked key and an expired key (fixtures made once: see fixtures/README.md) still give VALIDSIG.
+for K in revoked expired; do
+  fingerprints "fp-$K.json" "$(cat "$HERE/fixtures/$K.fpr")" "file://$HERE/fixtures/$K.pub"
+  expect fail "a signature of a $K key" V "fp-$K.json" "$HERE/fixtures/fixture-data.txt" "$HERE/fixtures/$K.asc"
+done
+
 # a server that fails twice with a server error, then serves the files: the downloads are retried
 cat > flaky.py << 'PY'
 import http.server, sys
