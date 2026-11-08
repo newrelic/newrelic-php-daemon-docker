@@ -11,14 +11,16 @@ usage: insert-release-data.py <data-file> <entry-file> <schema-file>
 
 <entry-file> holds the entry of one image as written by digest-entry.bash. The entry is inserted
 in version order, newest first, comparing the version numbers part by part (12.10.0 is newer than
-12.9.0), and replaces an entry with the same version.
+12.9.0). A recorded digest never changes: if the file has an entry with the same version, the file
+stays as it is when the digests are the same, and the script stops when they differ.
 
 The file is written in a fixed format (sorted keys, two-space indent), so that the change to the
 file is only the new entry. The script stops without writing anything if
   * the file or the result does not match the schema,
   * the file is not in that format, or its entries are not in version order (rewriting it would
     change more than the new entry),
-  * the entry has a version that is not made of numbers separated by dots.
+  * the entry has a version that is not made of numbers separated by dots,
+  * the file has an entry with the same version and other digests.
 """
 
 import json
@@ -63,6 +65,11 @@ def insert(data, entry):
     return dict(data, **{name: kept}), replaced
 
 
+def without_time(entry):
+    """Return the entry without the field that is a time, not a digest."""
+    return {key: value for key, value in entry.items() if key != "pushed"}
+
+
 def main(argv):
     if len(argv) != 4:
         print(__doc__, file=sys.stderr)
@@ -92,6 +99,14 @@ def main(argv):
         raise SystemExit("%s is not in version order, newest first, without duplicates; fix it first" % data_file)
 
     result, replaced = insert(data, entry)
+    # A digest that is recorded does not change. The time of the push is not a digest and is not compared.
+    if replaced is not None:
+        if without_time(replaced) != without_time(entry):
+            raise SystemExit("::error::%s has an entry for %s with other digests than the new one; "
+                             "a recorded digest must not be replaced, find out why the image changed"
+                             % (data_file, entry["version"]))
+        print("unchanged %s in %s: the same digests are recorded already" % (entry["version"], data_file))
+        return 0
     jsonschema.validate(result, schema)
 
     # Nothing but the new entry may change.

@@ -91,12 +91,16 @@ class InsertImageDigest(unittest.TestCase):
         text = self.run_script([entry("12.12.0")], entry("9.18.0"))
         self.assertEqual(self.versions(text), ["12.12.0", "9.18.0"])
 
-    def test_replaces_the_same_version(self):
+    def test_stops_when_the_same_version_has_another_digest(self):
         other = "sha256:" + "b" * 64
-        text = self.run_script([entry("12.12.0"), entry("12.1.0")], entry("12.12.0", other))
-        images = json.loads(text)["images"]
-        self.assertEqual([image["version"] for image in images], ["12.12.0", "12.1.0"])
-        self.assertEqual(images[0]["digest"], other)
+        with self.assertRaises(SystemExit) as stopped:
+            self.run_script([entry("12.12.0"), entry("12.1.0")], entry("12.12.0", other))
+        self.assertIn("a recorded digest must not be replaced", str(stopped.exception))
+
+    def test_leaves_the_file_as_it_is_when_the_same_digests_are_recorded(self):
+        before = insert_release_data.dump({"first_image_version": "9.2.0", "images": [entry("12.12.0"), entry("12.1.0")]})
+        after = self.run_script([entry("12.12.0"), entry("12.1.0")], entry("12.12.0"), raw=before)
+        self.assertEqual(after, before)
 
     def test_only_the_new_entry_changes_in_the_text(self):
         before = insert_release_data.dump({"first_image_version": "9.2.0", "images": [entry("12.12.0"), entry("12.1.0")]})
