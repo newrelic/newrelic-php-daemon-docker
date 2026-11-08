@@ -11,6 +11,8 @@ import os
 import tempfile
 import unittest
 
+import jsonschema
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 SPEC = importlib.util.spec_from_file_location("insert_release_data", os.path.join(HERE, "..", "..", "tools", "insert-release-data.py"))
 insert_release_data = importlib.util.module_from_spec(SPEC)
@@ -33,7 +35,7 @@ SCHEMA = {
                 "properties": {
                     "version": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]+)+$"},
                     "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
-                    "pushed": {"type": "string"},
+                    "pushed": {"type": "string", "format": "date-time"},
                     "platforms": {
                         "type": "object",
                         "minProperties": 1,
@@ -101,6 +103,22 @@ class InsertImageDigest(unittest.TestCase):
         before = insert_release_data.dump({"first_image_version": "9.2.0", "images": [entry("12.12.0"), entry("12.1.0")]})
         after = self.run_script([entry("12.12.0"), entry("12.1.0")], entry("12.12.0"), raw=before)
         self.assertEqual(after, before)
+
+    def test_stops_on_a_push_time_that_is_not_a_time(self):
+        for bad in ("yesterday", "2026-13-45T00:00:00Z"):
+            with self.assertRaises(jsonschema.ValidationError):
+                self.run_script([], dict(entry("12.12.0"), pushed=bad))
+
+    def test_stops_on_a_version_that_ends_in_a_newline(self):
+        with self.assertRaises(jsonschema.ValidationError):
+            self.run_script([], entry("12.12.0\n"))
+
+    def test_date_time_is_a_real_rfc3339_time(self):
+        for good in ("2026-10-21T17:28:13Z", "2026-10-21T17:28:13.952123Z", "2026-10-21T17:28:13+01:00"):
+            self.assertTrue(insert_release_data.is_date_time(good), good)
+        for bad in ("yesterday", "2026-13-01T00:00:00Z", "2026-10-21T25:00:00Z", "2026-10-21 17:28:13Z",
+                    "2026-10-21T17:28:13", "2026-10-21T17:28:13+25:00", "2026-10-21T17:28:13Z\n", 5):
+            self.assertFalse(insert_release_data.is_date_time(bad), bad)
 
     def test_only_the_new_entry_changes_in_the_text(self):
         before = insert_release_data.dump({"first_image_version": "9.2.0", "images": [entry("12.12.0"), entry("12.1.0")]})
