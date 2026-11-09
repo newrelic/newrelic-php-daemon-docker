@@ -32,7 +32,7 @@ import sys
 import jsonschema
 from jsonschema import exceptions, validators
 
-DATE_TIME = re.compile(r"^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(\.\d+)?(Z|[+-](\d{2}):(\d{2}))$")
+DATE_TIME = re.compile(r"^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}:\d{2})(\.\d+)?(Z|[+-](\d{2}):(\d{2}))$", re.ASCII)
 
 
 def pattern(validator, regex, instance, schema):
@@ -133,6 +133,12 @@ def main(argv):
     versions = [version_key(item["version"]) for item in data[name]]
     if versions != sorted(versions, reverse=True) or len(set(versions)) != len(versions):
         raise SystemExit("%s is not in version order, newest first, without duplicates; fix it first" % data_file)
+
+    # A tag below first_image_version has no official image, so it has no digest to record.
+    if name == "images" and "first_image_version" in data \
+            and version_key(entry["version"]) < version_key(data["first_image_version"]):
+        raise SystemExit("%s: %s is below first_image_version %s, which is the first tag with an image"
+                         % (data_file, entry["version"], data["first_image_version"]))
 
     result, replaced = insert(data, entry)
     # A digest that is recorded does not change. The time of the push is not a digest and is not compared.

@@ -33,7 +33,7 @@ SCHEMA = {
                 "additionalProperties": False,
                 "required": ["digest", "platforms", "pushed", "version"],
                 "properties": {
-                    "version": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]+)+$"},
+                    "version": {"type": "string", "pattern": "^(0|[1-9][0-9]*)(\\.(0|[1-9][0-9]*)){2}$"},
                     "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
                     "pushed": {"type": "string", "format": "date-time"},
                     "platforms": {
@@ -104,6 +104,13 @@ class InsertImageDigest(unittest.TestCase):
         after = self.run_script([entry("12.12.0"), entry("12.1.0")], entry("12.12.0"), raw=before)
         self.assertEqual(after, before)
 
+    def test_stops_on_a_tag_that_looks_like_another_one(self):
+        # 12.01.0 and 12.1.0 would be the same number, 12.12.0.41 is a version, not a tag
+        for tag in ("12.01.0", "12.12", "12.12.0.41"):
+            with self.subTest(tag=tag):
+                with self.assertRaises(Exception):
+                    self.run_script([], entry(tag))
+
     def test_stops_on_a_push_time_that_is_not_a_time(self):
         for bad in ("yesterday", "2026-13-45T00:00:00Z"):
             with self.assertRaises(jsonschema.ValidationError):
@@ -117,7 +124,8 @@ class InsertImageDigest(unittest.TestCase):
         for good in ("2026-10-21T17:28:13Z", "2026-10-21T17:28:13.952123Z", "2026-10-21T17:28:13+01:00"):
             self.assertTrue(insert_release_data.is_date_time(good), good)
         for bad in ("yesterday", "2026-13-01T00:00:00Z", "2026-10-21T25:00:00Z", "2026-10-21 17:28:13Z",
-                    "2026-10-21T17:28:13", "2026-10-21T17:28:13+25:00", "2026-10-21T17:28:13Z\n", 5):
+                    "2026-10-21T17:28:13", "2026-10-21T17:28:13+25:00", "2026-10-21T17:28:13Z\n", 5,
+                    "2026-10-21T17:28:13.\uff11\uff12Z", "2026-10-21T17:28:13+\uff10\uff11:00"):
             self.assertFalse(insert_release_data.is_date_time(bad), bad)
 
     def test_only_the_new_entry_changes_in_the_text(self):
@@ -131,6 +139,14 @@ class InsertImageDigest(unittest.TestCase):
         text = self.run_script([], entry("12.13.0"), raw=before)
         self.assertEqual(json.loads(text)["first_image_version"], "9.2.0")
         self.assertEqual([i["version"] for i in json.loads(text)["images"]], ["12.13.0", "12.12.0"])
+
+    def test_stops_on_a_tag_below_first_image_version(self):
+        before = insert_release_data.dump({"first_image_version": "9.2.0", "images": [entry("12.12.0")]})
+        with self.assertRaises(SystemExit) as stopped:
+            self.run_script([], entry("9.1.0"), raw=before)
+        self.assertIn("below first_image_version 9.2.0", str(stopped.exception))
+        text = self.run_script([], entry("9.2.0"), raw=before)
+        self.assertEqual([i["version"] for i in json.loads(text)["images"]], ["12.12.0", "9.2.0"])
 
     def test_stops_on_a_file_that_is_not_in_the_written_format(self):
         with self.assertRaises(SystemExit):
