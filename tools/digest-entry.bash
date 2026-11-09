@@ -21,13 +21,14 @@
 #
 # Environment (for tests): IMAGE (default newrelic/php-daemon), HUB_API (default
 # https://hub.docker.com/v2/repositories/newrelic/php-daemon/tags), HUB_TRIES (default 6),
-# HUB_WAIT (default 10).
+# HUB_WAIT (default 10), DOCKER_TRIES (default 3; the tries to read the manifest, HUB_WAIT seconds apart).
 
 set -euo pipefail
 
 IMAGE=${IMAGE:-newrelic/php-daemon}
 HUB_API=${HUB_API:-https://hub.docker.com/v2/repositories/newrelic/php-daemon/tags}
 HUB_TRIES=${HUB_TRIES:-6}
+DOCKER_TRIES=${DOCKER_TRIES:-3}
 HUB_WAIT=${HUB_WAIT:-10}
 
 if [[ $# -lt 1 || $# -gt 2 ]]; then
@@ -45,7 +46,13 @@ fail() {
 [[ $TAG =~ ^[0-9]+(\.[0-9]+)+$ ]] || fail "not an image tag: $TAG"
 
 # The manifest list (the index) of the tag, byte for byte; its hash is the digest of the tag.
-RAW=$(docker buildx imagetools inspect "$IMAGE:$TAG" --raw) || fail "cannot read the manifest of $IMAGE:$TAG"
+RAW=
+for TRY in $(seq 1 "$DOCKER_TRIES"); do
+  RAW=$(docker buildx imagetools inspect "$IMAGE:$TAG" --raw) && break
+  RAW=
+  [[ $TRY -eq $DOCKER_TRIES ]] || sleep "$HUB_WAIT"
+done
+[[ -n $RAW ]] || fail "cannot read the manifest of $IMAGE:$TAG"
 DIGEST="sha256:$(printf '%s' "$RAW" | sha256sum | awk '{print $1}')"
 
 [[ -z $EXPECTED || $EXPECTED = "$DIGEST" ]] || fail "the digest of $IMAGE:$TAG is $DIGEST, not the expected $EXPECTED"

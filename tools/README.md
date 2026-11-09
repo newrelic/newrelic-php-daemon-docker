@@ -28,6 +28,9 @@ PHP agent team. The [`publish-digest`](../.github/workflows/publish-digest.yml) 
 image that is already published (for example if the pull request could not be opened); it only shows the change unless
 `dry-run` is unchecked. Both use the action in [`.github/actions/publish-digest`](../.github/actions/publish-digest/action.yml)
 and the `release-data` environment, which holds the token that can open pull requests in the agent repository.
+The environment has no required reviewers, because the agent repository's ruleset requires an approval from the PHP agent
+team before the pull request can be merged. A re-run replaces the branch of the pull request (the action force-pushes it),
+so publish one digest pull request at a time.
 
 - `digest-entry.bash <tag> [<expected-digest>]` prints the entry for a published tag: the digest of the tag and the
   digest of the image of each platform, read from the registry manifest, and the push time from the Docker Hub API. It fails if the two

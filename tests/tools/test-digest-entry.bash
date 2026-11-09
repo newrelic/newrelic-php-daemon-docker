@@ -56,6 +56,12 @@ mkdir bin
 cat > bin/docker << 'STUB'
 #!/usr/bin/env bash
 [[ -z ${STUB_DOCKER_FAIL:-} ]] || exit 1
+# STUB_DOCKER_FAIL_TIMES: the first calls fail
+if [[ -n ${STUB_DOCKER_FAIL_TIMES:-} ]]; then
+  N=$(cat "$STUB_DIR/docker-count" 2> /dev/null || echo 0)
+  echo $((N + 1)) > "$STUB_DIR/docker-count"
+  [[ $N -ge $STUB_DOCKER_FAIL_TIMES ]] || exit 1
+fi
 cat "$STUB_INDEX"
 STUB
 cat > bin/curl << 'STUB'
@@ -73,7 +79,7 @@ STUB
 chmod +x bin/docker bin/curl
 export PATH="$WORK/bin:$PATH" STUB_INDEX="$WORK/index.raw" STUB_DIR="$WORK" HUB_WAIT=0 HUB_TRIES=3
 
-reset() { rm -f "$WORK/curl-count"; }
+reset() { rm -f "$WORK/curl-count" "$WORK/docker-count"; }
 
 reset; export STUB_API_FILES="$WORK/api-ok.json"
 "$ENTRY" 12.12.0 > entry.json 2> /dev/null
@@ -90,6 +96,8 @@ reset; expect fail 'another expected digest' "$ENTRY" 12.12.0 sha256:0000
 reset; expect fail 'a tag that is not a version' "$ENTRY" latest
 reset; expect fail 'no tag' "$ENTRY"
 reset; STUB_DOCKER_FAIL=1 expect fail 'the manifest cannot be read' "$ENTRY" 12.12.0
+reset; STUB_DOCKER_FAIL_TIMES=2 expect ok 'the manifest is read on the third try' "$ENTRY" 12.12.0
+reset; STUB_DOCKER_FAIL_TIMES=3 expect fail 'the manifest cannot be read in three tries' "$ENTRY" 12.12.0
 reset; STUB_CURL_FAIL=1 expect fail 'the API cannot be read' "$ENTRY" 12.12.0
 
 reset; export STUB_API_FILES="$WORK/api-stale.json"
