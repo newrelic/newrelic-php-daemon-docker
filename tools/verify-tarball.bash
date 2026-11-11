@@ -47,8 +47,8 @@ trap 'rm -rf "$WORK"' EXIT
 # --retry repeats timeouts and server errors, not a missing file
 CURL=(curl -fsSL --retry 3 --retry-delay "${RETRY_DELAY:-5}")
 "${CURL[@]}" -o "$WORK/fingerprints.json" "$FINGERPRINTS_URL" || fail "cannot download $FINGERPRINTS_URL"
-FINGERPRINT=$(jq -r '[.keys[] | select(.purpose == "tarball")][0].fingerprint // empty' "$WORK/fingerprints.json")
-KEY_URL=$(jq -r '[.keys[] | select(.purpose == "tarball")][0].public_key_url // empty' "$WORK/fingerprints.json")
+FINGERPRINT=$(jq -r '[.keys[] | select(.purpose == "tarball" and (.status // "active") == "active")][0].fingerprint // empty' "$WORK/fingerprints.json")
+KEY_URL=$(jq -r '[.keys[] | select(.purpose == "tarball" and (.status // "active") == "active")][0].public_key_url // empty' "$WORK/fingerprints.json")
 [[ -n $FINGERPRINT && -n $KEY_URL ]] || fail "$FINGERPRINTS_URL lists no tarball signing key"
 
 "${CURL[@]}" -o "$WORK/key.asc" "$KEY_URL" || fail "cannot download the public key from $KEY_URL"

@@ -63,6 +63,16 @@ fingerprints fp-wrong-key.json "$GOOD" "file://$WORK/other.pub"
 fingerprints fp-other-fingerprint.json "$OTHER" "file://$WORK/good.pub"
 fingerprints fp-no-key.json "$GOOD" "file://$WORK/missing.pub"
 echo '{"keys": [{"purpose": "apt", "fingerprint": "x", "public_key_url": "y"}]}' > fp-no-tarball.json
+# After a key rotation the retired key is listed too, here before the active one
+cat > fp-retired-first.json << JSON
+{"keys": [
+  {"purpose": "tarball", "fingerprint": "$OTHER", "public_key_url": "file://$WORK/other.pub", "status": "retired"},
+  {"purpose": "tarball", "fingerprint": "$GOOD", "public_key_url": "file://$WORK/good.pub", "status": "active"}
+]}
+JSON
+cat > fp-only-retired.json << JSON
+{"keys": [{"purpose": "tarball", "fingerprint": "$GOOD", "public_key_url": "file://$WORK/good.pub", "status": "revoked"}]}
+JSON
 echo 'not json' > fp-bad.json
 V() { "$VERIFY" --fingerprints-url "file://$WORK/$1" "${@:2}"; }
 
@@ -73,6 +83,9 @@ expect fail 'the key at the listed place is not the listed key' V fp-wrong-key.j
 expect fail 'the listed fingerprint is not the key at the listed place' V fp-other-fingerprint.json t.tar.gz t.tar.gz.asc
 expect fail 'the public key cannot be downloaded' V fp-no-key.json t.tar.gz t.tar.gz.asc
 expect fail 'the list has no tarball key' V fp-no-tarball.json t.tar.gz t.tar.gz.asc
+expect ok 'the active key is used when a retired key is listed before it' V fp-retired-first.json t.tar.gz t.tar.gz.asc
+expect fail 'a signature made by the retired key fails' V fp-retired-first.json t.tar.gz other.asc
+expect fail 'the list has only a revoked tarball key' V fp-only-retired.json t.tar.gz t.tar.gz.asc
 expect fail 'the list is not json' V fp-bad.json t.tar.gz t.tar.gz.asc
 expect fail 'the list cannot be downloaded' V missing.json t.tar.gz t.tar.gz.asc
 expect fail 'a missing signature' V fp.json t.tar.gz missing.asc
