@@ -1,0 +1,3 @@
+# The only Python dependency of the tools and their tests. Regenerate tools/requirements.txt with hashes after a change:
+#   pip-compile --generate-hashes --strip-extras --output-file=tools/requirements.txt tools/requirements.in
+jsonschema==4.23.0

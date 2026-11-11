@@ -29,7 +29,13 @@ runs:
   steps:
     - name: Install the schema validator
       shell: bash
-      run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends python3-jsonschema jq
+      env:
+        TOOLS: ${{ inputs.tools }}
+      run: |
+        python3 -m venv "$RUNNER_TEMP/venv"
+        "$RUNNER_TEMP/venv/bin/pip" install --require-hashes -r "$TOOLS/tools/requirements.txt"
+        echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
+        jq --version
     - name: Get the entry of the image from the registry
       shell: bash
       env:

@@ -35,11 +35,29 @@ jobs:
         id: extract_branch
 
       # Tests of the tools that verify the tarball and make the data for the release data
+      - name: Install the schema validator
+        run: |
+          python3 -m venv "$RUNNER_TEMP/venv"
+          "$RUNNER_TEMP/venv/bin/pip" install --require-hashes -r tools/requirements.txt
+          echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
       - name: Run the tests of the tools
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends python3-jsonschema jq
-          for test in tests/tools/test-*.bash; do bash "$test"; done
-          python3 -m unittest discover -s tests/tools
+          jq --version
+          status=0
+          count=0
+          for test in tests/tools/test-*.bash; do
+            [ -e "$test" ] || continue
+            count=$((count + 1))
+            echo "::group::$test"
+            bash "$test" || status=1
+            echo "::endgroup::"
+          done
+          if [ "$count" -eq 0 ]; then
+            echo "::error::no tests/tools/test-*.bash file found"
+            status=1
+          fi
+          python3 -m unittest discover -s tests/tools || status=1
+          exit $status
 
       # Runs the test scripts using the runner's shell
       - name: Run tests

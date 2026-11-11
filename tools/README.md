@@ -1,9 +1,12 @@
 # Tools
 
 Scripts that the image workflows run. Their tests are in [`tests/tools`](../tests/tools) and run in the `pr_runner`
-workflow; they need `bash`, `jq`, `gpg` and python3 with `jsonschema`, and no secrets:
+workflow; they need `bash`, `jq`, `gpg` and python3 with `jsonschema` (install it into a virtual environment from the hashed
+[`requirements.txt`](requirements.txt), as the workflows do), and no secrets:
 
 ```
+python3 -m venv venv && venv/bin/pip install --require-hashes -r tools/requirements.txt
+PATH="$PWD/venv/bin:$PATH"
 for test in tests/tools/test-*.bash; do bash "$test"; done
 python3 -m unittest discover -s tests/tools
 ```
@@ -11,7 +14,7 @@ python3 -m unittest discover -s tests/tools
 ## Building an image
 
 - `update-docker-image.bash <version>` downloads the musl tarball of the agent version and its `.asc` signature from the
-  download site (the archive URL in the secret `DOWNLOAD_ARCHIVE_URL`), calls `verify-tarball.bash`, and only then writes the
+  download site (the archive URL in the repository variable `DOWNLOAD_ARCHIVE_URL`; it is the public archive, so it is not a secret), calls `verify-tarball.bash`, and only then writes the
   SHA-256 hash of the tarball into the Dockerfile
   of the new image directory, commits and tags it. A missing signature or a failed check stops the script before any
   of that.
