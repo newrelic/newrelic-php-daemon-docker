@@ -63,7 +63,7 @@ FILE="$SERVE/$(basename "$3")"
 cp "$FILE" "$2"
 STUB
 chmod +x bin/wget
-export PATH="$WORK/bin:$PATH" SERVE="$WORK/serve" DOWNLOAD_URL=http://stub.invalid/archive
+export PATH="$WORK/bin:$PATH" SERVE="$WORK/serve" DOWNLOAD_ARCHIVE_URL=http://stub.invalid/archive
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@t GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@t
 
 # A fresh repository with the tools of this repository, except that the pinned key is the throwaway key.

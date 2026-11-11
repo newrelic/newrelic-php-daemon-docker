@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
       - name: Create new dockerfile and push branch
         env:
-          DOWNLOAD_URL: ${{ secrets.DOWNLOAD_URL }}
+          DOWNLOAD_ARCHIVE_URL: ${{ secrets.DOWNLOAD_ARCHIVE_URL }}
           VERSION: ${{ inputs.version }}
         run: |
           if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){3}$ ]]; then

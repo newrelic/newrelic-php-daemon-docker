@@ -11,7 +11,7 @@ python3 -m unittest discover -s tests/tools
 ## Building an image
 
 - `update-docker-image.bash <version>` downloads the musl tarball of the agent version and its `.asc` signature from the
-  download site, calls `verify-tarball.bash`, and only then writes the SHA-256 hash of the tarball into the Dockerfile
+  download site (the archive URL in the secret `DOWNLOAD_ARCHIVE_URL`), calls `verify-tarball.bash`, and only then writes the SHA-256 hash of the tarball into the Dockerfile
   of the new image directory, commits and tags it. A missing signature or a failed check stops the script before any
   of that.
 - `verify-tarball.bash [--fingerprints-url <url>] <tarball> <signature>` checks the detached signature against the
