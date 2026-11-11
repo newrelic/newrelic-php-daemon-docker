@@ -53,6 +53,18 @@ OUT=$1
 [[ -f $ENTRY ]] || die "entry file not found: $ENTRY"
 [[ -n $TITLE ]] || die '--title is required'
 
+# A run that fails leaves nothing behind: a half made output directory would be uploaded as the
+# replacement file by a workflow that keeps the output of a failed step.
+CREATED=no
+[[ -d $OUT ]] || CREATED=yes
+cleanup() {
+  local STATUS=$?
+  if [[ $STATUS -ne 0 ]]; then
+    rm -rf "$OUT/work" "$OUT/$FILE.before" "$OUT/$FILE" "$OUT/BASE_COMMIT" "$OUT/change.diff" "$OUT/NOTE.md"
+    [[ $CREATED = no ]] || rmdir "$OUT" 2> /dev/null || true
+  fi
+}
+trap cleanup EXIT
 mkdir -p "$OUT/work/schema"
 if [[ -n ${COMMIT:-} ]]; then
   SHA=$COMMIT

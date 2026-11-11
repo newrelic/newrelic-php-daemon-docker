@@ -13,6 +13,11 @@ on:
         description: 'Agent version of the image, e.g. 12.12.0.41'
         required: true
         type: string
+      digest:
+        description: 'Digest of the image that the push reported (optional; the tag is checked against it)'
+        required: false
+        default: ''
+        type: string
       dry-run:
         description: 'Show the change to the release data without opening a pull request'
         required: false
@@ -36,5 +41,6 @@ jobs:
       - uses: ./php-daemon/.github/actions/publish-digest
         with:
           version: ${{ inputs.version }}
+          digest: ${{ inputs.digest }}
           dry-run: ${{ inputs.dry-run }}
           token: ${{ secrets.NR_PHP_AGENT_REPO_GH_TOKEN }}

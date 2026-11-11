@@ -78,6 +78,10 @@ expect ok 'a given commit is named in NOTE.md and change.diff' bash -c "grep -q 
 expect fail 'a commit that is not a full hash fails' "$MAKE" --commit abc123 --entry "$WORK/entry.json" --title t "$WORK/c2"
 rm "$SERVED/daemon-image-digests.json"
 expect fail 'a file that is not served fails' "$MAKE" --entry "$WORK/entry.json" --title t "$WORK/x4"
+expect ok 'a failed run leaves no output directory' test ! -e "$WORK/x4"
+mkdir "$WORK/x5" && echo keep > "$WORK/x5/other.txt"
+expect fail 'a failed run in an existing directory fails' "$MAKE" --entry "$WORK/entry.json" --title t "$WORK/x5"
+expect ok 'a failed run in an existing directory removes only what it made' test "$(ls "$WORK/x5" | tr '\n' ' ')" = 'other.txt '
 
 printf '%s passed, %s failed\n' "$PASSED" "$FAILED"
 [[ $FAILED -eq 0 ]]

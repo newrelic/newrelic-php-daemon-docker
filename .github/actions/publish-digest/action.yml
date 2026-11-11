@@ -42,6 +42,9 @@ runs:
           echo "::error::version must look like 12.12.0.41"
           exit 1
         fi
+        if [[ -z $DIGEST ]]; then
+          echo "::warning::no expected digest was given, so the digest of the tag is not checked against the one the push reported"
+        fi
         # The image tag is the agent version without the build number.
         TAG=$(cut -d. -f1-3 <<< "$VERSION")
         "$TOOLS/tools/digest-entry.bash" "$TAG" "$DIGEST" | tee entry.json
