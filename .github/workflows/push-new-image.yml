@@ -65,5 +65,6 @@ jobs:
         with:
           version: ${{ inputs.version }}
           digest: ${{ needs.push-new-image.outputs.digest }}
+          require-digest: 'true'
           dry-run: 'false'
           token: ${{ secrets.NR_PHP_AGENT_REPO_GH_TOKEN }}
