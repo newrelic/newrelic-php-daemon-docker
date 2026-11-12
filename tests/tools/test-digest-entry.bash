@@ -95,6 +95,12 @@ reset; expect ok 'the expected digest is the digest' "$ENTRY" 12.12.0 "$DIGEST"
 reset; expect fail 'another expected digest' "$ENTRY" 12.12.0 sha256:0000
 reset; expect fail 'a tag that is not a version' "$ENTRY" latest
 reset; expect fail 'no tag' "$ENTRY"
+reset; "$ENTRY" --version 12.12.0 > entry-v.json 2> /dev/null
+expect ok '--version gives the same entry as the positional tag' cmp entry.json entry-v.json
+reset; expect ok '--version with the expected digest' "$ENTRY" --version 12.12.0 "$DIGEST"
+reset; expect fail '--version with another expected digest' "$ENTRY" --version 12.12.0 sha256:0000
+reset; expect fail '--version without a tag' "$ENTRY" --version
+reset; expect fail '--version with a tag that is not a version' "$ENTRY" --version latest
 reset; STUB_DOCKER_FAIL=1 expect fail 'the manifest cannot be read' "$ENTRY" 12.12.0
 reset; STUB_DOCKER_FAIL_TIMES=2 expect ok 'the manifest is read on the third try' "$ENTRY" 12.12.0
 reset; STUB_DOCKER_FAIL_TIMES=3 expect fail 'the manifest cannot be read in three tries' "$ENTRY" 12.12.0

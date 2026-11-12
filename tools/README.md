@@ -14,7 +14,7 @@ python3 -m unittest discover -s tests/tools
 ## Building an image
 
 - `update-docker-image.bash <version>` downloads the musl tarball of the agent version and its `.asc` signature from the
-  download site (the archive URL in the repository variable `DOWNLOAD_ARCHIVE_URL`; it is the public archive, so it is not a secret), calls `verify-tarball.bash`, and only then writes the
+  download site (the public archive, `https://download.newrelic.com/php_agent/archive`; the environment variable `DOWNLOAD_ARCHIVE_URL` replaces it, which the tests use), calls `verify-tarball.bash`, and only then writes the
   SHA-256 hash of the tarball into the Dockerfile
   of the new image directory, commits and tags it. A missing signature or a failed check stops the script before any
   of that.
@@ -47,7 +47,7 @@ cross-checked and the run warns.
   branch already holds the files, it does nothing; if the branch holds other content (an earlier attempt, for example the tag
   was pushed again), `--on-differ fail` (what the action uses) stops with an error and leaves the branch alone, and the
   default `replace` replaces the branch with the commit of this run, which updates the pull request. Its test uses a local bare repository and a `gh` stub.
-- `digest-entry.bash <tag> [<expected-digest>]` prints the entry for a published tag: the digest of the tag and the
+- `digest-entry.bash (--version <tag> | <tag>) [<expected-digest>]` prints the entry for a published tag: the digest of the tag and the
   digest of the image of each platform, read from the registry manifest, and the push time from the Docker Hub API. It fails if the two
   disagree or if the tag does not have the expected digest (the digest the push reported).
 - `make-replacement-file.bash` builds the complete new `daemon-image-digests.json` from the public copy of the agent

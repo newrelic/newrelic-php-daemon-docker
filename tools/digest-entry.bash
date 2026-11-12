@@ -8,9 +8,9 @@
 # digest-entry.bash - print the entry of a published daemon image for the list of image digests
 #                     (release-data/daemon-image-digests.json in newrelic-php-agent).
 #
-# usage: digest-entry.bash <tag> [<expected-digest>]
+# usage: digest-entry.bash (--version <tag> | <tag>) [<expected-digest>]
 #
-# <tag> is the image tag, which is the agent version without the build number, e.g. 12.12.0.
+# <tag> (also given as --version <tag>) is the image tag, which is the agent version without the build number, e.g. 12.12.0.
 # The digest of the tag and the digest of the image of each platform are taken from the manifest
 # that the registry serves, and the time of the last push from the Docker Hub API. The script fails
 # if the registry and the API disagree about the digest, or if the digest is not <expected-digest>
@@ -31,8 +31,12 @@ HUB_TRIES=${HUB_TRIES:-6}
 DOCKER_TRIES=${DOCKER_TRIES:-3}
 HUB_WAIT=${HUB_WAIT:-10}
 
+if [[ ${1:-} = --version ]]; then
+  [[ $# -ge 2 ]] || { echo "usage: $(basename "$0") (--version <tag> | <tag>) [<expected-digest>]" >&2; exit 2; }
+  set -- "${@:2}"
+fi
 if [[ $# -lt 1 || $# -gt 2 ]]; then
-  echo "usage: $(basename "$0") <tag> [<expected-digest>]" >&2
+  echo "usage: $(basename "$0") (--version <tag> | <tag>) [<expected-digest>]" >&2
   exit 2
 fi
 TAG=$1

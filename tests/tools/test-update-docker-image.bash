@@ -125,5 +125,18 @@ sign "$GOOD" serve/$TARBALL serve/$TARBALL.asc
 new_repo r5
 expect fail 'a short version is refused' bash -c "cd r5 && ./tools/update-docker-image.bash 9.8.7"
 
+# 6. no archive URL in the environment, or an empty one: the public archive
+sign "$GOOD" serve/$TARBALL serve/$TARBALL.asc
+rm -f "$WORK/requested-urls"
+new_repo r6
+expect ok 'no archive URL: the script succeeds' env -u DOWNLOAD_ARCHIVE_URL bash -c "cd r6 && ./tools/update-docker-image.bash $VERSION"
+expect ok 'no archive URL: the tarball and the signature are downloaded from the public archive' \
+  test "$(sort "$WORK/requested-urls")" = "https://download.newrelic.com/php_agent/archive/$VERSION/$TARBALL
+https://download.newrelic.com/php_agent/archive/$VERSION/$TARBALL.asc"
+rm "$WORK/requested-urls"
+new_repo r7
+expect ok 'an empty archive URL: the script succeeds' env DOWNLOAD_ARCHIVE_URL= bash -c "cd r7 && ./tools/update-docker-image.bash $VERSION"
+expect ok 'an empty archive URL: the public archive is used' grep -q '^https://download.newrelic.com/php_agent/archive/' "$WORK/requested-urls"
+
 printf '%s passed, %s failed\n' "$PASSED" "$FAILED"
 [[ $FAILED -eq 0 ]]
