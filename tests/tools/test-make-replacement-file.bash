@@ -39,7 +39,7 @@ cat > "$SERVED/schema/daemon-image-digests.schema.json" << 'JSON'
   "additionalProperties": false,
   "required": ["first_image_version", "images"],
   "properties": {
-    "first_image_version": {"type": "string"},
+    "first_image_version": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]+)+$"},
     "images": {
       "type": "array",
       "items": {
@@ -47,7 +47,7 @@ cat > "$SERVED/schema/daemon-image-digests.schema.json" << 'JSON'
         "additionalProperties": false,
         "required": ["digest", "platforms", "pushed", "version"],
         "properties": {
-          "version": {"type": "string", "pattern": "^[0-9]+(\\.[0-9]+)+$"},
+          "version": {"type": "string", "pattern": "^(0|[1-9][0-9]*)(\\.(0|[1-9][0-9]*)){2}$"},
           "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
           "pushed": {"type": "string"},
           "platforms": {"type": "object", "minProperties": 1, "additionalProperties": {"type": "string"}}
@@ -72,6 +72,10 @@ expect ok 'no work files are left' test "$(ls "$WORK/out" | LC_ALL=C sort | tr '
 expect fail 'a missing entry file fails' "$MAKE" --entry "$WORK/none.json" --title t "$WORK/x1"
 expect fail 'no title fails' "$MAKE" --entry "$WORK/entry.json" "$WORK/x2"
 expect fail 'a bad entry fails' "$MAKE" --entry <(echo '{"version": "1"}') --title t "$WORK/x3"
+entry_with_version() { printf '{"digest": "%s", "platforms": {"linux/amd64": "%s"}, "pushed": "2026-11-07T10:00:00Z", "version": "%s"}' "$D2" "$D2" "$1"; }
+expect fail 'a version with four parts fails' "$MAKE" --entry <(entry_with_version 12.13.0.1) --title t "$WORK/v1"
+expect fail 'a version with two parts fails' "$MAKE" --entry <(entry_with_version 12.13) --title t "$WORK/v2"
+expect fail 'a version with a leading zero fails' "$MAKE" --entry <(entry_with_version 12.013.0) --title t "$WORK/v3"
 COMMIT=0123456789abcdef0123456789abcdef01234567
 expect ok 'a given commit is written to BASE_COMMIT' bash -c "'$MAKE' --commit $COMMIT --entry '$WORK/entry.json' --title t '$WORK/c1' > /dev/null && test \"\$(cat '$WORK/c1/BASE_COMMIT')\" = $COMMIT"
 expect ok 'a given commit is named in NOTE.md and change.diff' bash -c "grep -q $COMMIT '$WORK/c1/NOTE.md' && grep -q $COMMIT '$WORK/c1/change.diff'"

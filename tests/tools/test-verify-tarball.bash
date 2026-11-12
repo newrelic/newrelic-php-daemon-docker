@@ -47,6 +47,14 @@ echo tarball > t.tar.gz
 sign "$GOOD" t.tar.gz t.tar.gz.asc
 sign "$OTHER" t.tar.gz other.asc
 cp t.tar.gz tampered.tar.gz && echo x >> tampered.tar.gz
+# a signature that has expired, made by a key that does not expire: gpg prints VALIDSIG next to EXPSIG
+EXPHOME=$(mktemp -d)
+FAKED=(--faked-system-time 20200101T000000)
+GNUPGHOME=$EXPHOME gpg --batch --quiet "${FAKED[@]}" --pinentry-mode loopback --passphrase '' --quick-generate-key 'expsig <expsig@example.com>' rsa2048 sign never 2> /dev/null
+EXPSIG=$(GNUPGHOME=$EXPHOME gpg --batch --with-colons --list-keys expsig | awk -F: '/^fpr:/ {print $10; exit}')
+GNUPGHOME=$EXPHOME gpg --batch --armor --export "$EXPSIG" > expsig.pub
+GNUPGHOME=$EXPHOME gpg --batch "${FAKED[@]}" --default-sig-expire 1d --pinentry-mode loopback --passphrase '' --local-user "$EXPSIG" --detach-sign --armor --yes -o expsig.asc t.tar.gz 2> /dev/null
+rm -rf "$EXPHOME"
 unset GNUPGHOME
 
 # The list of signing keys, as release-data/signing-key-fingerprints.json has it: another key comes first
@@ -74,9 +82,12 @@ cat > fp-only-retired.json << JSON
 {"keys": [{"purpose": "tarball", "fingerprint": "$GOOD", "public_key_url": "file://$WORK/good.pub", "status": "revoked"}]}
 JSON
 echo 'not json' > fp-bad.json
+fingerprints fp-expsig.json "$EXPSIG" "file://$WORK/expsig.pub"
 V() { "$VERIFY" --fingerprints-url "file://$WORK/$1" "${@:2}"; }
 
 expect ok 'a valid signature' V fp.json t.tar.gz t.tar.gz.asc
+expect fail 'a signature that has expired' V fp-expsig.json t.tar.gz expsig.asc
+expect ok 'the message of an expired signature says so' bash -c "'$VERIFY' --fingerprints-url file://$WORK/fp-expsig.json t.tar.gz expsig.asc 2>&1 | grep -q 'signature has expired'"
 expect fail 'a changed tarball' V fp.json tampered.tar.gz t.tar.gz.asc
 expect fail 'a signature made by another key' V fp.json t.tar.gz other.asc
 expect fail 'the key at the listed place is not the listed key' V fp-wrong-key.json t.tar.gz t.tar.gz.asc
