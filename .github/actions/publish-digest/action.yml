@@ -109,28 +109,12 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.token }}
         VERSION: ${{ inputs.version }}
+        TOOLS: ${{ inputs.tools }}
         RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       run: |
         set -euo pipefail
+        SCRIPT=$(realpath "$TOOLS/tools/open-release-data-pr.bash")
         cp replacement/daemon-image-digests.json php-agent/release-data/daemon-image-digests.json
-        cd php-agent
-        if git diff --quiet; then
-          echo "::notice::release-data/daemon-image-digests.json already has this digest for ${VERSION}"
-          exit 0
-        fi
-        BRANCH="release-data/add-daemon-image-digest-${VERSION}"
-        # Run again after a failure: nothing to do if the pull request is open, otherwise the
-        # branch of an earlier attempt is replaced.
-        if [ "$(gh pr list --head "$BRANCH" --state open --json number --jq length)" != 0 ]; then
-          echo "::notice::the pull request for ${VERSION} is already open"
-          exit 0
-        fi
-        git config user.name 'github-actions[bot]'
-        git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-        git checkout -b "$BRANCH"
-        git add release-data/daemon-image-digests.json
-        git commit -m "chore(release-data): add daemon image digest for ${VERSION}"
-        git push --force origin "$BRANCH"
         {
           echo "Adds the digest of the newrelic/php-daemon image for ${VERSION} to \`release-data/daemon-image-digests.json\`."
           echo
@@ -138,6 +122,13 @@ runs:
           echo
           echo 'This pull request needs an approval from the PHP agent team.'
         } > "$RUNNER_TEMP/body.md"
-        gh pr create --base main --head "$BRANCH" \
+        # A run again after a failure finds the branch of the earlier attempt: it is left alone if it holds this
+        # digest. If it holds another digest, the tag was pushed again while the pull request was open: stop and
+        # leave it to a person. The complete new file is in the artifact replacement-release-data.
+        cd php-agent
+        "$SCRIPT" \
+          --branch "release-data/add-daemon-image-digest-${VERSION}" \
           --title "chore(release-data): add daemon image digest for ${VERSION}" \
-          --body-file "$RUNNER_TEMP/body.md"
+          --body-file "$RUNNER_TEMP/body.md" \
+          --on-differ fail \
+          release-data/daemon-image-digests.json

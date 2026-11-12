@@ -40,6 +40,13 @@ re-run builds and pushes the tag again, and a recorded digest is never replaced,
 The by-hand workflow takes an optional `digest`, the one the push reported; without it the digest of the tag is not
 cross-checked and the run warns.
 
+- `open-release-data-pr.bash --branch <name> --title <text> --body-file <file> <path>...` runs in a clone of the agent
+  repository and pushes the changed files to the branch and opens the pull request. It does nothing if the files have no
+  change. Only an open pull request from a branch of the agent repository counts (`gh pr list --head` also matches a pull
+  request from a fork with the same branch name, which is reported and left alone). If such a pull request is open and its
+  branch already holds the files, it does nothing; if the branch holds other content (an earlier attempt, for example the tag
+  was pushed again), `--on-differ fail` (what the action uses) stops with an error and leaves the branch alone, and the
+  default `replace` replaces the branch with the commit of this run, which updates the pull request. Its test uses a local bare repository and a `gh` stub.
 - `digest-entry.bash <tag> [<expected-digest>]` prints the entry for a published tag: the digest of the tag and the
   digest of the image of each platform, read from the registry manifest, and the push time from the Docker Hub API. It fails if the two
   disagree or if the tag does not have the expected digest (the digest the push reported).
