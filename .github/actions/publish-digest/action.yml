@@ -45,20 +45,12 @@ runs:
         TOOLS: ${{ github.action_path }}/../../../tools
       run: |
         set -euo pipefail
-        if ! [[ "$VERSION" =~ ^[0-9]+(\.[0-9]+){3}$ ]]; then
-          echo "::error::version must look like 12.12.0.41"
+        # digest-entry.bash checks the version, derives the image tag and warns when there is no expected digest.
+        if [[ -z $DIGEST && $REQUIRE_DIGEST = true ]]; then
+          echo "::error::the push reported no digest, so the digest of the tag cannot be checked against it"
           exit 1
         fi
-        if [[ -z $DIGEST ]]; then
-          if [[ $REQUIRE_DIGEST = true ]]; then
-            echo "::error::the push reported no digest, so the digest of the tag cannot be checked against it"
-            exit 1
-          fi
-          echo "::warning::no expected digest was given, so the digest of the tag is not checked against the one the push reported"
-        fi
-        # The image tag is the agent version without the build number.
-        TAG=$(cut -d. -f1-3 <<< "$VERSION")
-        "$TOOLS/digest-entry.bash" "$TAG" "$DIGEST" | tee entry.json
+        "$TOOLS/digest-entry.bash" --version "$VERSION" "$DIGEST" | tee entry.json
     # The complete new file is built from the public copy of the agent repository, so it exists even if the
     # token does not work: copy it to release-data/ in the agent repository and open the pull request by hand.
     - name: Build the complete new list of image digests

@@ -8,9 +8,12 @@
 # digest-entry.bash - print the entry of a published daemon image for the list of image digests
 #                     (release-data/daemon-image-digests.json in newrelic-php-agent).
 #
-# usage: digest-entry.bash (--version <tag> | <tag>) [<expected-digest>]
+# usage: digest-entry.bash (--version <agent-version> | <tag>) [<expected-digest>]
 #
-# <tag> (also given as --version <tag>) is the image tag, which is the agent version without the build number, e.g. 12.12.0.
+# <agent-version> has four numbers, e.g. 12.12.0.41; the image tag is the agent version without the build number, e.g.
+# 12.12.0, which a caller that has only the tag gives as the first argument instead. With --version the script checks
+# the four numbers, derives the tag, and warns when no expected digest was given (the digest of the tag is then not
+# checked against the one that the push reported).
 # The digest of the tag and the digest of the image of each platform are taken from the manifest
 # that the registry serves, and the time of the last push from the Docker Hub API. The script fails
 # if the registry and the API disagree about the digest, or if the digest is not <expected-digest>
@@ -31,22 +34,34 @@ HUB_TRIES=${HUB_TRIES:-6}
 DOCKER_TRIES=${DOCKER_TRIES:-3}
 HUB_WAIT=${HUB_WAIT:-10}
 
-if [[ ${1:-} = --version ]]; then
-  [[ $# -ge 2 ]] || { echo "usage: $(basename "$0") (--version <tag> | <tag>) [<expected-digest>]" >&2; exit 2; }
-  set -- "${@:2}"
-fi
-if [[ $# -lt 1 || $# -gt 2 ]]; then
-  echo "usage: $(basename "$0") (--version <tag> | <tag>) [<expected-digest>]" >&2
+usage() {
+  echo "usage: $(basename "$0") (--version <agent-version> | <tag>) [<expected-digest>]" >&2
   exit 2
+}
+
+VERSION=
+TAG=
+if [[ ${1:-} = --version ]]; then
+  [[ $# -ge 2 && $# -le 3 ]] || usage
+  VERSION=$2
+  EXPECTED=${3:-}
+else
+  [[ $# -ge 1 && $# -le 2 ]] || usage
+  TAG=$1
+  EXPECTED=${2:-}
 fi
-TAG=$1
-EXPECTED=${2:-}
 
 fail() {
   echo "ERROR: $*" >&2
   exit 1
 }
 
+if [[ -n $VERSION ]]; then
+  [[ $VERSION =~ ^[0-9]+(\.[0-9]+){3}$ ]] || fail "not an agent version (four numbers, like 12.12.0.41): $VERSION"
+  # The image tag is the agent version without the build number.
+  TAG=$(cut -d. -f1-3 <<< "$VERSION")
+  [[ -n $EXPECTED ]] || echo "::warning::no expected digest was given, so the digest of the tag is not checked against the one the push reported" >&2
+fi
 [[ $TAG =~ ^[0-9]+(\.[0-9]+)+$ ]] || fail "not an image tag: $TAG"
 
 # The manifest list (the index) of the tag, byte for byte; its hash is the digest of the tag.
