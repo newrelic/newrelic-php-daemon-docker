@@ -34,8 +34,9 @@ image that is already published (for example if the pull request could not be op
 `dry-run` is unchecked. Both use the action in [`.github/actions/publish-digest`](../.github/actions/publish-digest/action.yml)
 and the `release-data` environment, which holds the token that can open pull requests in the agent repository.
 The environment has no required reviewers, because the agent repository's ruleset requires an approval from the PHP agent
-team before the pull request can be merged. A re-run replaces the branch of the pull request (the action force-pushes it),
-so publish one digest pull request at a time. Use `Re-run failed jobs` on `push-new-image`, never a full re-run: a full
+team before the pull request can be merged. A re-run of the same push leaves the branch of the pull request alone. If the branch holds other
+content (the tag was pushed again while an earlier digest pull request was open), the action stops with an error and
+leaves the branch alone: close that pull request and use `Re-run failed jobs`. Publish one digest pull request at a time. Use `Re-run failed jobs` on `push-new-image`, never a full re-run: a full
 re-run builds and pushes the tag again, and a recorded digest is never replaced, so the new digest fails `publish-digest`.
 The by-hand workflow takes an optional `digest`, the one the push reported; without it the digest of the tag is not
 cross-checked and the run warns.
