@@ -1,0 +1,131 @@
+name: publish-digest
+description: >
+  Add the digest of a published daemon image to release-data/daemon-image-digests.json in the
+  newrelic-php-agent repository, through a pull request. The calling job checks out this
+  repository, declares the release-data environment and passes its token.
+
+inputs:
+  version:
+    description: 'Agent version of the image, e.g. 12.12.0.41'
+    required: true
+  digest:
+    description: 'Digest that the push reported (optional; the tag is checked against it)'
+    required: false
+    default: ''
+  require-digest:
+    description: 'true: fail if no digest was given (the push reported none); false: only warn'
+    required: false
+    default: 'false'
+  dry-run:
+    description: 'true: show the change to the release data without opening a pull request'
+    required: false
+    default: 'true'
+  token:
+    description: 'Token that can open pull requests in newrelic-php-agent'
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install the schema validator
+      shell: bash
+      env:
+        TOOLS: ${{ github.action_path }}/../../../tools
+      run: |
+        python3 -m venv "$RUNNER_TEMP/venv"
+        "$RUNNER_TEMP/venv/bin/pip" install --require-hashes -r "$TOOLS/requirements.txt"
+        echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
+        jq --version
+    - name: Get the entry of the image from the registry
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        DIGEST: ${{ inputs.digest }}
+        REQUIRE_DIGEST: ${{ inputs.require-digest }}
+        TOOLS: ${{ github.action_path }}/../../../tools
+      run: |
+        set -euo pipefail
+        # digest-entry.bash checks the version, derives the image tag and warns when there is no expected digest.
+        if [[ -z $DIGEST && $REQUIRE_DIGEST = true ]]; then
+          echo "::error::the push reported no digest, so the digest of the tag cannot be checked against it"
+          exit 1
+        fi
+        "$TOOLS/digest-entry.bash" --version "$VERSION" "$DIGEST" | tee entry.json
+    # The complete new file is built from the public copy of the agent repository, so it exists even if the
+    # token does not work: copy it to release-data/ in the agent repository and open the pull request by hand.
+    - name: Build the complete new list of image digests
+      id: build
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        TOOLS: ${{ github.action_path }}/../../../tools
+      run: |
+        set -euo pipefail
+        "$TOOLS/make-replacement-file.bash" --entry entry.json \
+          --title "chore(release-data): add daemon image digest for ${VERSION}" replacement
+        # The pull request is made from this commit, so a change that reached main since then is not reverted.
+        BASE=$(cat replacement/BASE_COMMIT)
+        [[ -n $BASE ]] || { echo '::error::replacement/BASE_COMMIT is empty'; exit 1; }
+        echo "base=$BASE" >> "$GITHUB_OUTPUT"
+    - name: Upload the complete new list
+      if: ${{ always() }}
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # 7.0.2
+      with:
+        name: replacement-release-data
+        path: replacement
+        if-no-files-found: ignore
+        overwrite: true
+    - name: Dry run summary
+      if: ${{ inputs.dry-run == 'true' }}
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+      run: |
+        {
+          echo '## DRY RUN: the pull request was not opened'
+          echo
+          echo '**This is a dry run. Nothing was pushed and no pull request was opened.**'
+          echo
+          echo 'If this were not a dry run, a pull request would be opened in newrelic/newrelic-php-agent titled `chore(release-data): add daemon image digest for '"${VERSION}"'` with this change:'
+          echo
+          echo '```diff'
+          cat replacement/change.diff
+          echo '```'
+        } >> "$GITHUB_STEP_SUMMARY"
+    - name: Checkout the agent repository
+      if: ${{ inputs.dry-run != 'true' }}
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+      with:
+        repository: newrelic/newrelic-php-agent
+        ref: ${{ steps.build.outputs.base }}
+        path: php-agent
+        token: ${{ inputs.token }}
+    - name: Open the pull request
+      if: ${{ inputs.dry-run != 'true' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        VERSION: ${{ inputs.version }}
+        TOOLS: ${{ github.action_path }}/../../../tools
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        set -euo pipefail
+        SCRIPT=$(realpath "$TOOLS/open-release-data-pr.bash")
+        cp replacement/daemon-image-digests.json php-agent/release-data/daemon-image-digests.json
+        {
+          echo "Adds the digest of the newrelic/php-daemon image for ${VERSION} to \`release-data/daemon-image-digests.json\`."
+          echo
+          echo "The digest and the digests of the platform images come from the registry, and the push time from Docker Hub, right after the push: ${RUN_URL}"
+          echo
+          echo 'This pull request needs an approval from the PHP agent team.'
+        } > "$RUNNER_TEMP/body.md"
+        # A run again after a failure finds the branch of the earlier attempt: it is left alone if it holds this
+        # digest. If it holds another digest, the tag was pushed again while the pull request was open: stop and
+        # leave it to a person. The complete new file is in the artifact replacement-release-data.
+        cd php-agent
+        "$SCRIPT" \
+          --branch "release-data/add-daemon-image-digest-${VERSION}" \
+          --title "chore(release-data): add daemon image digest for ${VERSION}" \
+          --body-file "$RUNNER_TEMP/body.md" \
+          --on-differ fail \
+          release-data/daemon-image-digests.json

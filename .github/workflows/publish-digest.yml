@@ -1,0 +1,46 @@
+name: publish-digest
+permissions: {}
+
+# Adds the digest of a published daemon image to release-data/daemon-image-digests.json in the
+# newrelic-php-agent repository, through a pull request. push-new-image does this after the push; this
+# workflow does it by hand for an image that is already published (for example, if the pull request
+# could not be opened). It only shows the change unless dry-run is unchecked.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Agent version of the image, e.g. 12.12.0.41'
+        required: true
+        type: string
+      digest:
+        description: 'Digest of the image that the push reported (optional; the tag is checked against it)'
+        required: false
+        default: ''
+        type: string
+      dry-run:
+        description: 'Show the change to the release data without opening a pull request'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  publish-digest:
+    name: Open the pull request with the daemon image digest
+    # The environment holds the token that can open pull requests in the agent repository.
+    environment: release-data
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the tools
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+        with:
+          path: php-daemon
+          persist-credentials: false
+      - uses: ./php-daemon/.github/actions/publish-digest
+        with:
+          version: ${{ inputs.version }}
+          digest: ${{ inputs.digest }}
+          dry-run: ${{ inputs.dry-run }}
+          token: ${{ secrets.NR_PHP_AGENT_REPO_GH_TOKEN }}
